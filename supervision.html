@@ -34,7 +34,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
       <label for="loginUrl">URL de Apps Script (/exec)</label><input id="loginUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec" spellcheck="false" autocomplete="off">
     </details>
     <button class="btn red" id="loginBtn" type="submit">Ingresar al panel</button>
+    <button class="btn outline" id="diagnosticoBtn" type="button" style="width:100%;margin-top:9px">Comprobar conexión con el receptor</button>
     <div class="error" id="loginError" role="alert" hidden></div>
+    <p id="loginDiagnostico" class="muted" role="status" aria-live="polite">Versión 0.6 · Acceso por PIN validado por Apps Script.</p>
     <p style="margin-top:12px">PIN inicial de pruebas: <strong>solicítalo al administrador</strong>. No es una autenticación corporativa de producción.</p>
     <p><a href="./index.html">← Volver al operador</a></p>
   </form>
@@ -61,7 +63,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
       <div class="filters" style="margin-top:14px">
         <div class="f-field"><label for="desde">Desde</label><input id="desde" type="date"></div>
         <div class="f-field"><label for="hasta">Hasta</label><input id="hasta" type="date"></div>
-        <div class="f-field"><label for="equipoFiltro">Equipo / patente</label><input id="equipoFiltro" type="search" placeholder="Todos"></div>
+        <div class="f-field"><label for="equipoFiltro">Equipo</label><input id="equipoFiltro" type="search" placeholder="Todos"></div>
         <div class="f-field"><label for="sectorFiltro">Área / sector</label><select id="sectorFiltro"><option value="">Todos</option></select></div>
         <div class="f-field"><label for="puntoFiltro">Punto de carguío</label><select id="puntoFiltro"><option value="">Todos</option><option value="TK-41">TK-41</option><option value="TK-42">TK-42</option><option value="OTROS">Otros</option><option value="SIN REGISTRO">Sin registro</option></select></div>
         <div class="f-field"><label for="turnoFiltro">Turno</label><select id="turnoFiltro"><option value="">Todos</option><option value="DIA">Día</option><option value="NOCHE">Noche</option></select></div>
@@ -95,7 +97,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
     </div>
     <section class="panel" id="circuitos"><div class="panel-red">▤ · Últimos circuitos y trazabilidad</div>
       <div class="headerline"><p class="sub" id="tableCount">0 registros</p><button class="btn outline no-print" id="exportCsvQuick">↓ CSV</button></div>
-      <div class="scroll"><table><thead><tr><th>Fecha</th><th>Equipo</th><th>Punto de carguío</th><th>Agua (L)</th><th>Supresor (kg)</th><th>Sector</th><th>Km total</th><th>Km regando</th><th>Min. riego</th><th>Estado</th><th>Ruta</th></tr></thead><tbody id="tbody"></tbody></table></div>
+      <div class="scroll"><table><thead><tr><th>Fecha</th><th>Equipo</th><th>Punto de carguío</th><th>Agua (L)</th><th>Supresor (kg)</th><th>Sector</th><th>Flujómetro</th><th>Km total</th><th>Km regando</th><th>Min. riego</th><th>Estado</th><th>Ruta</th></tr></thead><tbody id="tbody"></tbody></table></div>
     </section>
     <div class="report-grid">
       <section class="panel"><div class="panel-red">▦ · Resumen por área / sector</div>
@@ -120,7 +122,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
     </section>
   </main>
 </div>
-<footer class="foot">ICV · Ingeniería Civil Vicente · Faena Salares Norte · Control de Riego & GPS v0.5 · Informes con trazabilidad de circuitos recibidos.</footer>
+<footer class="foot">ICV · Ingeniería Civil Vicente · Faena Salares Norte · Control de Riego & GPS v0.6 · Informes con trazabilidad de circuitos recibidos.</footer>
 </div>
 <script>
 'use strict';
@@ -140,11 +142,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
  const error=v=>{$('panelError').hidden=!v;$('panelError').textContent=v||''};
  const csvSafe=v=>{let s=String(v??'');if(/^[\s]*[=+@\-\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};
  const downloadBlob=(name,type,data)=>{const url=URL.createObjectURL(new Blob([data],{type})),a=el('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)};
- const jsonp=(url,params)=>new Promise((resolve,reject)=>{
+ const jsonp=(url,params,timeoutMs=35000)=>new Promise((resolve,reject)=>{
    const callback='icvAck_'+rand().slice(0,20),script=el('script');let done=false;
    const cleanup=()=>{clearTimeout(timer);script.remove();try{delete window[callback]}catch(_){window[callback]=undefined}};
    const finish=(err,value)=>{if(done)return;done=true;cleanup();err?reject(err):resolve(value)};
-   const timer=setTimeout(()=>finish(new Error('Respuesta de Apps Script agotada (35 s).')),35000);
+   const timer=setTimeout(()=>finish(new Error('No hubo respuesta de Apps Script. Comprueba URL /exec y publicación del backend.')),timeoutMs);
    window[callback]=r=>finish(null,r);
    script.onerror=()=>finish(new Error('No se pudo consultar el backend /exec.'));
    const u=new URL(url);for(const [k,v] of Object.entries({...params,prefix:callback}))u.searchParams.set(k,String(v));
@@ -155,24 +157,48 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
  function initConfig(){const cfg=configOld();$('loginUrl').value=localStorage.getItem('icv_riego_v05_apiurl')||cfg.url||'';
    $('syncUrl').value=cfg.url||$('loginUrl').value;$('recordarToken').checked=!!cfg.recordar;$('enviarDemo').checked=!!cfg.permitirDemo;
    $('syncToken').value=cfg.recordar?(localStorage.getItem(tokenLocal)||''):(sessionStorage.getItem(tokenSession)||'');if(!$('loginUrl').value)$('loginUrl').closest('details').open=true;}
+ async function verificarBackend(){
+   const url=$('loginUrl').value.trim().replace(/\/+$/,'');
+   if(!validUrl(url))throw new Error('Ingresa la URL original /exec de Google Apps Script. Abre Configuración del receptor.');
+   const r=await jsonp(url,{accion:'diagnostico_publico',nocache:Date.now()},12000);
+   if(!r||!r.ok||r.version_panel!=='0.6.0')
+     throw new Error('El backend no corresponde a la v0.6. En Apps Script selecciona Nueva versión → Implementar y comprueba la URL /exec.');
+   if(!r.pin_configurado)throw new Error('Falta configurar el PIN en Apps Script. Ejecuta migrarDatosRiego05().');
+   return r;
+ }
+ async function diagnosticarConexion(){
+   const b=$('diagnosticoBtn');b.disabled=true;$('loginDiagnostico').textContent='Comprobando receptor…';$('loginError').hidden=true;
+   try{await verificarBackend();$('loginDiagnostico').textContent='✓ Receptor v0.6 accesible · PIN configurado. Si el 1234 falla, ejecuta diagnosticarSupervisor06() desde Apps Script.';}
+   catch(e){$('loginDiagnostico').textContent='Error de comunicación: '+e.message;$('loginUrl').closest('details').open=true;}
+   finally{b.disabled=false;}
+ }
  async function login(e){e.preventDefault();$('loginError').hidden=true;const btn=$('loginBtn'),url=$('loginUrl').value.trim().replace(/\/+$/,'');
-   if(!validUrl(url)){$('loginError').textContent='Ingresa la URL /exec original de Apps Script.';$('loginError').hidden=false;return;}
+   if(!validUrl(url)){$('loginError').textContent='Abre Configuración del receptor e ingresa la URL /exec correcta.';$('loginError').hidden=false;return;}
    const pin=$('loginPin').value;if(!/^\d{4,8}$/.test(pin)){$('loginError').textContent='Introduce un PIN de 4 a 8 dígitos.';$('loginError').hidden=false;return;}
    btn.disabled=true;btn.textContent='Validando acceso…';const requestId=rand();
    try{
+     await verificarBackend();
+     // El POST es opaco (no-cors): NO se considera confirmación de acceso.
      await fetch(url,{method:'POST',mode:'no-cors',redirect:'follow',cache:'no-store',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({version:1,accion:'login_supervisor',solicitud_id:requestId,pin})});
      let response=null;
-     for(let i=0;i<14;i++){await wait(i===0?700:900);response=await jsonp(url,{accion:'login_estado',solicitud_id:requestId});if(!response?.pendiente)break;}
-     if(!response||!response.ok||!response.autenticado||!response.sid||!response.clave_sesion)throw new Error(response?.mensaje||'No se pudo confirmar el acceso. Verifica que el backend v0.5 esté implementado.');
+     for(let i=0;i<18;i++){
+       await wait(i===0?1000:900);
+       response=await jsonp(url,{accion:'login_estado',solicitud_id:requestId,nocache:Date.now()},14000);
+       if(!response?.pendiente)break;
+     }
+     if(!response||response.pendiente)throw new Error('No se recibió confirmación de login. Revisa en Apps Script → Ejecuciones si el POST se procesó y verifica la nueva implementación.');
+     if(!response.ok||!response.autenticado||!response.sid||!response.clave_sesion)
+       throw new Error(response.mensaje||'Login rechazado. Ejecuta diagnosticarSupervisor06() para verificar el PIN configurado.');
      state.sid=response.sid;state.sessionKey=response.clave_sesion;state.url=url;
      localStorage.setItem('icv_riego_v05_apiurl',url);$('loginPin').value='';$('loginGate').hidden=true;$('supervisorApp').hidden=false;
-     status('Acceso autorizado. Consulta los circuitos desde Google Sheets.');await consultar();
-   }catch(err){$('loginError').textContent=err.message;$('loginError').hidden=false;}
+     status('Acceso autorizado. Consulta los circuitos desde Google Sheets.');
+     await consultar();
+   }catch(err){$('loginError').textContent=err.message;$('loginError').hidden=false;$('loginUrl').closest('details').open=true;}
    finally{btn.disabled=false;btn.textContent='Ingresar al panel';}
  }
  function logout(){state.sid='';state.sessionKey='';state.rows=[];state.visible=[];state.selected=null;location.href='./supervision.html';}
  const modeOf=r=>String(r.circuito_id||'').startsWith('TEST_')||r.modo==='DEMO'?'DEMO':'REAL';
- const normal=r=>({circuito_id:String(r.circuito_id||''),fecha_operacion:String(r.fecha_operacion||''),equipo:String(r.equipo||''),patente:String(r.patente||''),operador:String(r.operador||''),turno:String(r.turno||''),litros_cargados:num(r.litros_cargados),supresor_kg:num(r.supresor_kg),punto_carguio:String(r.punto_carguio||'SIN REGISTRO'),punto_carguio_otro:String(r.punto_carguio_otro||''),area_sector:String(r.area_sector||'Sin especificar'),distancia_km:num(r.distancia_km),distancia_regando_km:num(r.distancia_regando_km),tiempo_regando_min:num(r.tiempo_regando_min),velocidad_max_kmh:num(r.velocidad_max_kmh),limite_velocidad_kmh:num(r.limite_velocidad_kmh)||50,estado:String(r.estado||'PENDIENTE'),modo:modeOf(r),inicio_iso:String(r.inicio_iso||''),_points:r._points||[]});
+ const normal=r=>({circuito_id:String(r.circuito_id||''),fecha_operacion:String(r.fecha_operacion||''),equipo:String(r.equipo||''),patente:String(r.patente||''),operador:String(r.operador||''),turno:String(r.turno||''),litros_cargados:num(r.litros_cargados),supresor_kg:num(r.supresor_kg),punto_carguio:String(r.punto_carguio||'SIN REGISTRO'),punto_carguio_otro:String(r.punto_carguio_otro||''),area_sector:String(r.area_sector||'Sin clasificar'),distancia_km:num(r.distancia_km),distancia_regando_km:num(r.distancia_regando_km),tiempo_regando_min:num(r.tiempo_regando_min),velocidad_max_kmh:num(r.velocidad_max_kmh),limite_velocidad_kmh:num(r.limite_velocidad_kmh)||50,estado:String(r.estado||'PENDIENTE'),modo:modeOf(r),inicio_iso:String(r.inicio_iso||''),flujometro_aplica:r.flujometro_aplica===true,flujometro_id:String(r.flujometro_id||''),flujometro_lectura_inicio:r.flujometro_lectura_inicio??'',flujometro_lectura_termino:r.flujometro_lectura_termino??'',flujometro_unidad:String(r.flujometro_unidad||''),flujometro_volumen_l:num(r.flujometro_volumen_l),_points:r._points||[]});
  function localRows(){let data=[];try{data=JSON.parse(localStorage.getItem('icv_riego_v1_circuitos_pendientes')||'[]')}catch(_){ }if(!Array.isArray(data))return [];
    return data.filter(c=>c?.resumen).map(c=>{const r=c.resumen,points=Array.isArray(c.puntos)?c.puntos:[];
      return normal({...r,distancia_km:num(c.totalMetros)/1000,distancia_regando_km:r.distancia_regando_km??points.reduce((a,p)=>a+(p.regando?num(p.distancia_tramo_m):0),0)/1000,tiempo_regando_min:num(r.tiempo_regando_min),estado:c.estado_local==='SINCRONIZADO'?'COMPLETO':'PENDIENTE',modo:c.modo,_points:points});});
@@ -216,11 +242,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
    $('tableCount').textContent=rows.length+' circuitos · fuente '+(state.source==='cloud'?'Sheets':'local');
    const tbody=$('tbody');tbody.replaceChildren();for(const r of rows.slice().sort((a,b)=>b.fecha_operacion.localeCompare(a.fecha_operacion)).slice(0,300)){
      const tr=el('tr');const punto=r.punto_carguio==='OTROS'?(r.punto_carguio_otro||'Otros'):r.punto_carguio;
-     for(const x of [r.fecha_operacion,r.equipo+' · '+r.patente,punto,fmt(r.litros_cargados),fmt(r.supresor_kg,1),r.area_sector,fmt(r.distancia_km,2),fmt(r.distancia_regando_km,2),fmt(r.tiempo_regando_min,1)])tr.append(el('td','',x));
+     for(const x of [r.fecha_operacion,r.equipo,punto,fmt(r.litros_cargados),fmt(r.supresor_kg,1),r.area_sector,r.flujometro_aplica?'Sí · '+fmt(r.flujometro_volumen_l)+' L':'No aplica',fmt(r.distancia_km,2),fmt(r.distancia_regando_km,2),fmt(r.tiempo_regando_min,1)])tr.append(el('td','',x));
      const st=el('td'),flag=el('span','flag '+(r.estado==='COMPLETO'?'':'wait'),r.estado);st.append(flag);tr.append(st);
      const td=el('td'),btn=el('button','route-btn','Ver ruta');btn.type='button';btn.addEventListener('click',()=>openRoute(r));td.append(btn);tr.append(td);tbody.append(tr);
    }
-   if(!rows.length){const tr=el('tr'),td=el('td','','Sin circuitos para este filtro.');td.colSpan=11;tr.append(td);tbody.append(tr);}
+   if(!rows.length){const tr=el('tr'),td=el('td','','Sin circuitos para este filtro.');td.colSpan=12;tr.append(td);tbody.append(tr);}
    const sectors=aggregates(rows,r=>r.area_sector||'Sin especificar'),sectorBody=$('sectorTbody');sectorBody.replaceChildren();
    for(const v of sectors){const tr=el('tr');for(const x of [v.name,fmt(v.circuitos),fmt(v.agua),fmt(v.supresor,1),fmt(v.riego_km,2)])tr.append(el('td','',x));sectorBody.append(tr);}
    bars('chartAgua',rows,'agua');bars('chartSupresor',rows,'supresor');
@@ -249,15 +275,15 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
      if(points.length===1)state.map.setView([a.lat,a.lon],15);else state.map.fitBounds(L.latLngBounds(points.map(p=>[p.lat,p.lon])).pad(.22));setTimeout(()=>state.map.invalidateSize(),150);
    }catch(e){$('routeMap').hidden=true;$('routeSvg').hidden=false;svgRoute(points);}
  }
- async function openRoute(r){$('routeTitle').textContent=r.equipo+' · '+r.patente;$('routeSub').textContent='Cargando trazado de '+r.fecha_operacion+'…';$('mapa').scrollIntoView({behavior:'smooth'});
+ async function openRoute(r){$('routeTitle').textContent=r.equipo+(r.patente?' · '+r.patente:'');$('routeSub').textContent='Cargando trazado de '+r.fecha_operacion+'…';$('mapa').scrollIntoView({behavior:'smooth'});
    try{let points=[];if(state.source==='local')points=r._points||[];
      else{const ts=Date.now(),sig=await hmac('ruta|'+r.circuito_id+'|'+ts,state.sessionKey),resp=await jsonp(state.url,{accion:'ruta',circuito_id:r.circuito_id,ts,sig,sid:state.sid});if(!resp?.ok)throw new Error(resp?.mensaje||resp?.codigo||'Ruta no disponible.');points=Array.isArray(resp.puntos)?resp.puntos:[];}
      state.selected={r,points};drawRoute(r,points);$('routeSub').textContent=points.length+' puntos GPS · '+fmt(r.distancia_regando_km,2)+' km regando · ruta histórica recibida.';
    }catch(e){$('routeSub').textContent='No fue posible recuperar la ruta: '+e.message;}
  }
  function clearMap(){state.selected=null;$('routeTitle').textContent='Selecciona un circuito';$('routeSub').textContent='Presiona Ver ruta para consultar el trazado guardado.';$('routeSvg').hidden=true;$('routeMap').hidden=true;$('routePlaceholder').hidden=false;}
- function reporteMatriz(){const rows=state.visible,h=['Fecha','ID circuito','Equipo','Patente','Operador','Turno','Punto carguío','Lugar otros','Área/Sector','Agua cargada (L)','Supresor (kg)','Distancia total (km)','Distancia regando (km)','Tiempo regando (min)','Velocidad máx (km/h)','Estado'];
-   const vals=rows.map(r=>[r.fecha_operacion,r.circuito_id,r.equipo,r.patente,r.operador,r.turno,r.punto_carguio,r.punto_carguio_otro,r.area_sector,r.litros_cargados,r.supresor_kg,r.distancia_km,r.distancia_regando_km,r.tiempo_regando_min,r.velocidad_max_kmh,r.estado]);return [h,...vals]}
+ function reporteMatriz(){const rows=state.visible,h=['Fecha','ID circuito','Equipo','Operador','Turno','Punto carguío','Lugar otros','Área/Sector','Agua cargada (L)','Supresor (kg)','Flujómetro aplica','N.º flujómetro','Lectura inicial','Lectura final','Unidad','Volumen flujómetro (L)','Distancia total (km)','Distancia regando (km)','Tiempo regando (min)','Velocidad máx (km/h)','Estado'];
+   const vals=rows.map(r=>[r.fecha_operacion,r.circuito_id,r.equipo,r.operador,r.turno,r.punto_carguio,r.punto_carguio_otro,r.area_sector,r.litros_cargados,r.supresor_kg,r.flujometro_aplica?'Sí':'No',r.flujometro_id,r.flujometro_lectura_inicio,r.flujometro_lectura_termino,r.flujometro_unidad,r.flujometro_volumen_l,r.distancia_km,r.distancia_regando_km,r.tiempo_regando_min,r.velocidad_max_kmh,r.estado]);return [h,...vals]}
  function exportCSV(){if(state.partial||!state.visible.length)return;const data='\uFEFF'+reporteMatriz().map(row=>row.map(csvSafe).join(';')).join('\r\n');downloadBlob('ICV_Riego_'+$('desde').value+'_'+$('hasta').value+'.csv','text/csv;charset=utf-8',data);}
  // Generador XLSX nativo, sin librerías externas ni servidores, cuatro hojas de cálculo.
  const xml=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
@@ -297,7 +323,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
  }
  function init(){initConfig();const hoy=new Date();$('hasta').value=isoDate(hoy);$('desde').value=isoDate(new Date(hoy.getTime()-6*86400000));
    $('topDate').textContent=new Intl.DateTimeFormat('es-CL',{timeZone:'America/Santiago',dateStyle:'medium'}).format(hoy);
-   $('loginForm').addEventListener('submit',login);$('logoutBtn').addEventListener('click',logout);$('sourceCloud').addEventListener('click',()=>selectSource('cloud'));$('sourceLocal').addEventListener('click',()=>selectSource('local'));$('consultarBtn').addEventListener('click',()=>consultar());
+   $('loginForm').addEventListener('submit',login);$('diagnosticoBtn').addEventListener('click',diagnosticarConexion);$('logoutBtn').addEventListener('click',logout);$('sourceCloud').addEventListener('click',()=>selectSource('cloud'));$('sourceLocal').addEventListener('click',()=>selectSource('local'));$('consultarBtn').addEventListener('click',()=>consultar());
    for(const id of ['equipoFiltro','sectorFiltro','puntoFiltro','turnoFiltro'])$(id).addEventListener(id==='equipoFiltro'?'input':'change',render);
    $('incluirDemo').addEventListener('change',()=>{if(state.source==='local')render();else status('Para incluir DEMO de Sheets pulsa Consultar datos.');});
    $('exportCsv').addEventListener('click',exportCSV);$('exportCsvQuick').addEventListener('click',exportCSV);$('exportXlsx').addEventListener('click',exportXLSX);$('exportPdf').addEventListener('click',pdf);$('clearRoute').addEventListener('click',clearMap);$('configForm').addEventListener('submit',saveConfig);
@@ -306,7 +332,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
    render();
  }
  init();
- window.ICV_SUPERVISOR_DIAG=Object.freeze({version:'0.5.0',getState:()=>({autorizado:!!state.sid,fuente:state.source,filas:state.rows.length,visibles:state.visible.length,parcial:state.partial})});
+ window.ICV_SUPERVISOR_DIAG=Object.freeze({version:'0.6.0',getState:()=>({autorizado:!!state.sid,fuente:state.source,filas:state.rows.length,visibles:state.visible.length,parcial:state.partial})});
 })();
 </script>
 </body></html>

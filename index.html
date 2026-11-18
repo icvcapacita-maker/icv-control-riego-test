@@ -88,6 +88,16 @@
     .stage4-link{display:flex;justify-content:center;align-items:center;text-decoration:none;border-radius:11px;min-height:47px;padding:10px 15px;background:#212121;color:white;font-size:14px;font-weight:800}
     .stage4-link:focus-visible{outline:3px solid #D32F2F;outline-offset:3px}
 
+    /* VERSION 0.6 - instalación visible y lecturas opcionales del flujómetro */
+    .install-operator{margin-top:14px;padding:13px;border:1px solid #DFE5EA;border-radius:12px;background:#F7F9FB;display:grid;gap:8px}
+    .install-operator .button{min-height:48px;background:#FFF;color:#25303B}
+    .install-operator p{margin:0;line-height:1.4}
+    .meter-choice .hint{margin-top:7px}.meter-fields{background:#F7F9FB;border:1px solid #DFE5EA;padding:14px;border-radius:12px}
+    .flow-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .flow-result{padding:11px 12px;margin-top:11px;background:#E7F6ED;border:1px solid #B6E2C7;border-radius:9px;font-size:13px;color:#165B36}
+    .flow-result strong{font-size:16px}.meter-fields p.hint{margin:9px 0 0}
+    #litros[readonly]{background:#EAF4EF;border-color:#9ACFB1;font-weight:800}
+    @media(max-width:500px){.flow-grid{grid-template-columns:1fr}}
     /* VERSION 0.5 - experiencia tablet 16:9, orientación horizontal */
     .app{max-width:1640px}.icv-logo{width:72px;height:49px;object-fit:contain;background:#fff;padding:4px;border-radius:8px;flex:none}.access-super{color:#fff;text-decoration:none;background:#3E4145;border:1px solid #686B70;padding:10px 13px;border-radius:10px;font-size:12px;font-weight:850;white-space:nowrap}
     .header{padding:14px 22px}.header-foot{margin-top:8px}.operator-workspace{display:grid;gap:14px;min-width:0}.operator-workspace>section{min-width:0}
@@ -123,10 +133,24 @@
         <form id="startForm" novalidate>
           <div class="fields">
             <div class="field"><label for="equipo">Equipo / Camión aljibe *</label><input id="equipo" name="equipo" maxlength="80" autocomplete="off" required placeholder="Ej.: Aljibe 10"></div>
-            <div class="field"><label for="patente">Patente / Identificador *</label><input id="patente" name="patente" maxlength="30" autocomplete="off" autocapitalize="characters" required placeholder="Ej.: CE-010"></div>
+            
             <div class="field wide"><label for="operador">Nombre del operador *</label><input id="operador" name="operador" maxlength="120" autocomplete="name" required placeholder="Nombre y apellido"></div>
             <div class="field"><label for="turno">Turno *</label><select id="turno" name="turno" required><option value="DIA">Día (08:00–20:00)</option><option value="NOCHE">Noche (20:00–08:00)</option></select></div>
-            <div class="field"><label for="litros">Agua cargada *</label><div class="unit-wrap"><input id="litros" name="litros" type="number" min="1" max="100000" step="1" inputmode="numeric" required placeholder="Ej.: 10000"><span class="unit">litros</span></div></div>
+            <div class="field"><label for="litros" id="litrosEtiqueta">Agua cargada · ingreso manual *</label><div class="unit-wrap"><input id="litros" name="litros" type="number" min="1" max="100000" step="1" inputmode="numeric" required placeholder="Ej.: 10000"><span class="unit">litros</span></div></div>
+            <div class="field wide meter-choice">
+              <label class="check-inline" for="flujometroCheck"><input type="checkbox" id="flujometroCheck"> <strong>Registrar flujómetro (cuando aplique)</strong></label>
+              <div class="hint" id="modoAguaNota"><strong>Sin flujómetro:</strong> ingresa manualmente la cantidad de litros en el campo superior. Si cuentas con flujómetro, marca la casilla para calcularlos a partir de sus lecturas.</div>
+            </div>
+            <div class="field wide meter-fields" id="flujometroCampos" hidden>
+              <div class="flow-grid">
+                <div class="field"><label for="flujometroId">N.º / ID de flujómetro (opcional)</label><input id="flujometroId" maxlength="50" placeholder="Ej.: FM-TK41-01"></div>
+                <div class="field"><label for="flujometroUnidad">Unidad del contador *</label><select id="flujometroUnidad"><option value="M3">m³</option><option value="L">Litros (L)</option></select></div>
+                <div class="field"><label for="flujometroInicio">Lectura inicial *</label><input id="flujometroInicio" type="number" min="0" max="999999999" step="any" inputmode="decimal" placeholder="Ej.: 1250.50"></div>
+                <div class="field"><label for="flujometroFin">Lectura final *</label><input id="flujometroFin" type="number" min="0" max="999999999" step="any" inputmode="decimal" placeholder="Ej.: 1262.50"></div>
+              </div>
+              <div class="flow-result" role="status" aria-live="polite">Agua calculada por flujómetro: <strong id="flujometroLitros">—</strong></div>
+              <p class="hint">Si el contador está en m³: (lectura final − lectura inicial) × 1.000 = litros. No mezclar unidades.</p>
+            </div>
             <div class="field wide"><label>Punto de carguío *</label>
               <div class="choice-row" id="puntoChoices" role="radiogroup" aria-label="Punto de carguío">
                 <label class="choice"><input type="radio" name="puntoCarguio" value="TK-41" checked> TK-41</label>
@@ -135,9 +159,7 @@
               </div>
             </div>
             <div class="field wide" id="otroCarguioBox" hidden><label for="otroCarguio">Indica el lugar de carguío *</label><input id="otroCarguio" type="text" maxlength="80" placeholder="Ej.: TK auxiliar / sector sur"></div>
-            <div class="field"><label for="sector">Área / sector de riego</label><select id="sector"><option value="Sin especificar">Seleccionar sector</option><option>Pista Norte</option><option>Pista Principal</option><option>Pista Sur</option><option>Botadero 4420</option><option>Botadero 4430</option><option>Botadero 4550</option><option>DRF</option><option value="OTROS">Otros</option></select></div>
             <div class="field"><label for="supresorCheck">Supresor de polvo</label><label class="check-inline"><input id="supresorCheck" type="checkbox"> Se cargó supresor</label></div>
-            <div class="field wide" id="sectorOtroBox" hidden><label for="sectorOtro">Especificar sector *</label><input id="sectorOtro" maxlength="90" placeholder="Indicar sector"></div>
             <div class="field wide" id="supresorCantidadBox" hidden><label for="supresorCantidad">Cantidad de supresor *</label><div class="unit-wrap"><input type="number" id="supresorCantidad" step="0.1" min="0.1" max="10000" inputmode="decimal" placeholder="Ej.: 250"><span class="unit">kg</span></div></div>
             <div class="field wide"><div class="constant-speed">Límite técnico registrado: <strong>50 km/h</strong>. Se aplica el límite señalizado de la vía si es menor.</div></div>
           </div>
@@ -146,15 +168,17 @@
           <div style="height:14px"></div>
           <button class="button primary full" type="submit" id="startBtn">▶ &nbsp; Iniciar circuito y GPS</button><div class="active-form-note" id="formActiveNotice" hidden>✓ Circuito en curso · Los datos del equipo quedan bloqueados hasta finalizar.</div>
         </form>
+        <div class="install-operator" id="installOperatorPanel">
+          <button id="installPwaButton" class="button light full" type="button">⬇ &nbsp; Instalar aplicación en esta tablet</button>
+          <p class="minor" id="pwaInstallHint">En Android usa Chrome → Instalar aplicación. En iPad/iPhone: Compartir → Añadir a pantalla de inicio.</p>
+          <p class="minor" id="pwaOfflineState" role="status">Comprobando compatibilidad para uso sin conexión...</p>
+        </div>
       </div></div>
       <div class="supervisor-only-data" hidden aria-hidden="true"><div class="info-bar"><span>◉</span><div><strong id="pendingCount">0 circuitos pendientes</strong> · <strong id="cloudCount">0</strong> confirmados en Google Sheets.</div></div>
       <div class="stage4-panel">
         <div class="stage4-header"><div><p class="eyebrow">Etapa 4 · PWA</p><h2>Supervisión e instalación</h2></div><span class="sync-pill">v0.4</span></div>
         <p>Panel de circuitos locales y, con credencial independiente, registros confirmados de Google Sheets.</p>
         <a class="stage4-link" href="./supervision.html">▤ &nbsp; Abrir panel de supervisión</a>
-        <button id="installPwaButton" class="button light full" type="button" hidden>＋ &nbsp; Instalar aplicación</button>
-        <p id="pwaInstallHint">Para instalar: en Android usa el menú de Chrome → Instalar app. En iPhone abre el menú Compartir → Añadir a pantalla de inicio.</p>
-        <p id="pwaOfflineState">Preparando versión offline...</p>
       </div>
       <div class="card"><div class="card-body">
         <div class="sync-header"><div><p class="eyebrow">Sincronización</p><h2>Conexión con Google Sheets</h2><div class="section-sub" id="syncInfo">Pendiente de configuración</div></div><span class="sync-pill">ETAPA 4</span></div>
@@ -277,7 +301,7 @@
       </div></div>
     </section>
   </main>
-  <footer class="footer">ICV · Salares Norte · Control de Riego GPS v0.5 · Control de riego en tablet · Configurar la app con el vehículo detenido.</footer>
+  <footer class="footer">ICV · Salares Norte · Control de Riego GPS v0.6 · Control de riego en tablet · Configurar la app con el vehículo detenido.</footer>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
 <script>
@@ -328,16 +352,42 @@
   function createCircuit(form){const now=new Date(),isDemo=demoQuery;const inicio=new Date(isDemo?now.getTime()-120000:now.getTime());const id=(isDemo?'TEST_':'CR_')+zoneDate(now).replace(/-/g,'')+'_'+uuid().slice(0,23);
     return {
       protocolo:1,modo:isDemo?'DEMO':'REAL',estado_local:'EN_CURSO',
-      resumen:{circuito_id:id,fecha_operacion:zoneDate(now),equipo:form.equipo,patente:form.patente,operador:form.operador,turno:form.turno,litros_cargados:form.litros,limite_velocidad_kmh:CFG.fixedLimitKmh,inicio_iso:inicio.toISOString(),fin_iso:null,puntos_esperados:0,punto_carguio:form.punto,punto_carguio_otro:form.otro,supresor_kg:form.supresor,area_sector:form.sector,eventos_riego:[]},
+      resumen:{circuito_id:id,fecha_operacion:zoneDate(now),equipo:form.equipo,patente:'',operador:form.operador,turno:form.turno,litros_cargados:form.litros,limite_velocidad_kmh:CFG.fixedLimitKmh,inicio_iso:inicio.toISOString(),fin_iso:null,puntos_esperados:0,punto_carguio:form.punto,punto_carguio_otro:form.otro,supresor_kg:form.supresor,area_sector:'Sin clasificar',eventos_riego:[],flujometro_aplica:form.flujo.aplica,flujometro_id:form.flujo.id,flujometro_lectura_inicio:form.flujo.inicio,flujometro_lectura_termino:form.flujo.fin,flujometro_unidad:form.flujo.unidad,flujometro_volumen_l:form.flujo.volumen},
       puntos:[],regando:false,eventos_riego:[],totalMetros:0,velocidad_max_kmh:0,muestras_exceso:0,descartadas:0,ultima_actualizacion_iso:now.toISOString()
     };
   }
+  let aguaManualAntesFlujo='';
+  function datosFlujometro(){
+    if(!$('flujometroCheck').checked)return {valido:true,aplica:false,id:'',inicio:null,fin:null,unidad:'',volumen:0};
+    const s=$('flujometroInicio').value.trim(),t=$('flujometroFin').value.trim(),unidad=$('flujometroUnidad').value,id=$('flujometroId').value.trim();
+    if(!s||!t)return {valido:false,mensaje:'Ingresa las lecturas inicial y final del flujómetro.'};
+    const inicio=Number(s),fin=Number(t),factor=unidad==='M3'?1000:1;
+    if(!['M3','L'].includes(unidad)||!Number.isFinite(inicio)||!Number.isFinite(fin)||inicio<0||fin<=inicio||fin>999999999)
+      return {valido:false,mensaje:'Revisa las lecturas: la final debe ser mayor que la inicial.'};
+    if(id&&(!safeInput(id)||id.length>50))return {valido:false,mensaje:'Revisa el identificador del flujómetro.'};
+    const volumen=Math.round((fin-inicio)*factor);
+    if(volumen<1||volumen>100000)return {valido:false,mensaje:'El volumen calculado debe estar entre 1 y 100.000 litros.'};
+    if(Math.abs((fin-inicio)*factor-volumen)>.5)return {valido:false,mensaje:'Verifica las unidades y la resolución del contador.'};
+    return {valido:true,aplica:true,id,inicio,fin,unidad,volumen};
+  }
+  function refrescarFlujometro(){
+    const activo=$('flujometroCheck').checked;
+    $('flujometroCampos').hidden=!activo;
+    $('litros').readOnly=activo;
+    $('litrosEtiqueta').textContent=activo?'Agua cargada · calculada por flujómetro *':'Agua cargada · ingreso manual *';
+    $('modoAguaNota').textContent=activo?'Con flujómetro: registra las lecturas inicial y final en el formulario. El volumen se calculará automáticamente.':'Sin flujómetro: ingresa manualmente los litros cargados en el campo superior.';
+    if(!activo){$('litros').value=aguaManualAntesFlujo;$('flujometroLitros').textContent='—';return;}
+    const f=datosFlujometro();
+    $('litros').value=f.valido?String(f.volumen):'';
+    $('flujometroLitros').textContent=f.valido?dec(f.volumen,0)+' L':f.mensaje;
+  }
   function startFromForm(ev){ev.preventDefault();if(!estado.storageOK){warn('Almacenamiento local no disponible. No es seguro iniciar un circuito.');return;}if(estado.circuito){toast('Ya existe un circuito en curso.');return;}
-    const form={equipo:$('equipo').value.trim(),patente:$('patente').value.trim().toUpperCase(),operador:$('operador').value.trim(),turno:$('turno').value,litros:Number($('litros').value),punto:document.querySelector('input[name="puntoCarguio"]:checked').value,otro:$('otroCarguio').value.trim(),sector:$('sector').value==='OTROS'?$('sectorOtro').value.trim():$('sector').value,supresor:$('supresorCheck').checked?Number($('supresorCantidad').value):0};
-    if(!safeInput(form.equipo)||form.equipo.length>80||!safeInput(form.patente)||form.patente.length>30||!safeInput(form.operador)||form.operador.length>120){toast('Completa los datos sin caracteres de fórmula ni saltos de línea.');return;}
-    if(!['DIA','NOCHE'].includes(form.turno)||!Number.isInteger(form.litros)||form.litros<1||form.litros>100000){toast('Revisa turno y litros cargados (1–100.000).');return;}
+    const flujo=datosFlujometro();
+    if(!flujo.valido){toast(flujo.mensaje);return;}
+    const form={equipo:$('equipo').value.trim(),operador:$('operador').value.trim(),turno:$('turno').value,litros:flujo.aplica?flujo.volumen:Number($('litros').value),punto:document.querySelector('input[name="puntoCarguio"]:checked').value,otro:$('otroCarguio').value.trim(),supresor:$('supresorCheck').checked?Number($('supresorCantidad').value):0,flujo};
+    if(!safeInput(form.equipo)||form.equipo.length>80||!safeInput(form.operador)||form.operador.length>120){toast('Completa equipo y operador sin caracteres inválidos.');return;}
+    if(!['DIA','NOCHE'].includes(form.turno)||!Number.isInteger(form.litros)||form.litros<1||form.litros>100000){toast('Revisa turno y agua cargada (1–100.000 litros).');return;}
     if(form.punto==='OTROS'&&!safeInput(form.otro)){toast('Especifica el punto de carguío.');return;}
-    if(form.sector==='OTROS'||!safeInput(form.sector)){toast('Especifica el área o sector.');return;}
     if(!Number.isFinite(form.supresor)||form.supresor<0||form.supresor>10000||($('supresorCheck').checked&&form.supresor<=0)){toast('La cantidad de supresor debe expresarse en kg y ser positiva.');return;}
     if(!demoQuery&&(!window.isSecureContext||!navigator.geolocation)){warn('Para utilizar GPS debes abrir esta aplicación desde una URL HTTPS (por ejemplo, GitHub Pages), autorizar ubicación y usar un navegador compatible.');return;}
     clearWarning();estado.circuito=createCircuit(form);estado.discarded=0;estado.currentSpeed=0;estado.excess=false;estado.gpsTime=null;estado.accuracy=null;estado.demoUsed=false;
@@ -396,7 +446,7 @@
     render();
   }
   function render(){const c=estado.circuito;if(!c)return;const r=c.resumen,dist=c.totalMetros/1000;
-    text('runningTitle',r.equipo+' · '+r.patente);text('runningInfo',r.punto_carguio+(r.punto_carguio==='OTROS'?' · '+r.punto_carguio_otro:'')+' · '+dec(r.litros_cargados,0)+' L · '+dec(r.supresor_kg||0,1)+' kg supresor');
+    text('runningTitle',r.equipo+(r.patente?' · '+r.patente:''));text('runningInfo',r.punto_carguio+(r.punto_carguio==='OTROS'?' · '+r.punto_carguio_otro:'')+' · '+dec(r.litros_cargados,0)+' L · '+dec(r.supresor_kg||0,1)+' kg supresor');
     const minutos=calcularMinutosRiego(c);text('riegoTiempo',formatDuration(minutos*60000));text('riegoDistancia',dec(distanciaRegando(c),2)+' km');text('pointCountMain',String(c.puntos.length));actualizarBotonRiego();
     text('speedNumber',String(Math.round(estado.currentSpeed)));text('speedLimit',dec(r.limite_velocidad_kmh,0)+' km/h');
     $('speedPanel').classList.toggle('excess',estado.excess);$('speedAlert').hidden=!estado.excess;
@@ -478,7 +528,7 @@
   }
   function cancelEmptyCircuit(){const c=estado.circuito;if(!c||c.puntos.length>0)return;if(!confirm('¿Cancelar esta apertura sin puntos GPS? No se guardará como circuito terminado.'))return;stopSensors();try{localStorage.removeItem(STORAGE.active);}catch(_){warn('No fue posible eliminar la apertura del almacenamiento local.');return;}resetForNew();toast('Apertura cancelada sin puntos GPS.');}
   function resetForNew(){estado.circuito=null;estado.gpsTime=null;estado.accuracy=null;estado.currentSpeed=0;estado.excess=false;estado.segments=[];estado.follow=true;estado.discarded=0;estado.saveTime=0;estado.demoUsed=false;$('demoTools').hidden=true;
-    $('startForm').reset();$('supresorCantidadBox').hidden=true;$('otroCarguioBox').hidden=true;$('sectorOtroBox').hidden=true;show('setupScreen');clearWarning();updatePending();}
+    $('startForm').reset();aguaManualAntesFlujo='';$('supresorCantidadBox').hidden=true;$('otroCarguioBox').hidden=true;$('flujometroCampos').hidden=true;$('litros').readOnly=false;$('litrosEtiqueta').textContent='Agua cargada · ingreso manual *';$('modoAguaNota').textContent='Sin flujómetro: ingresa manualmente los litros cargados en el campo superior.';show('setupScreen');clearWarning();updatePending();}
   function recoverCircuit(){const active=readStore(STORAGE.active,null);if(!validCircuit(active))return;estado.circuito=active;if(!Array.isArray(active.eventos_riego))active.eventos_riego=[];if(typeof active.regando!=='boolean')active.regando=false;estado.discarded=Number(active.descartadas)||0;estado.gpsTime=active.puntos.length?Date.parse(active.puntos.at(-1).fecha_iso):null;estado.accuracy=active.puntos.length?active.puntos.at(-1).precision_m:null;estado.currentSpeed=0;estado.excess=false;
     show('runningScreen');$('resumeNotice').hidden=false;$('demoTools').hidden=active.modo!=='DEMO'||active.puntos.length>0;$('demoRibbon').hidden=active.modo!=='DEMO';text('gpsStatus','GPS pendiente de reanudación');text('savedValue','Recuperado del dispositivo');render();toast('Se recuperó un circuito anterior. Presiona Reanudar GPS.');
   }
@@ -501,7 +551,8 @@
     $('riegoToggle').addEventListener('click',alternarRiego);
     document.querySelectorAll('input[name="puntoCarguio"]').forEach(x=>x.addEventListener('change',()=>{$('otroCarguioBox').hidden=document.querySelector('input[name="puntoCarguio"]:checked').value!=='OTROS';}));
     $('supresorCheck').addEventListener('change',()=>{$('supresorCantidadBox').hidden=!$('supresorCheck').checked;});
-    $('sector').addEventListener('change',()=>{$('sectorOtroBox').hidden=$('sector').value!=='OTROS';});
+    $('flujometroCheck').addEventListener('change',()=>{if($('flujometroCheck').checked)aguaManualAntesFlujo=$('litros').value;refrescarFlujometro();});
+    for(const id of ['flujometroInicio','flujometroFin','flujometroUnidad'])$(id).addEventListener('input',refrescarFlujometro);
     $('startForm').addEventListener('submit',startFromForm);$('finishButton').addEventListener('click',finishCircuit);
     $('retryGpsButton').addEventListener('click',()=>{if(estado.circuito&&estado.circuito.modo!=='DEMO'){iniciarGPS();requestWake();}});
     $('newCircuitButton').addEventListener('click',resetForNew);$('cancelEmptyButton').addEventListener('click',cancelEmptyCircuit);$('demoBtn').addEventListener('click',demoPoints);
@@ -834,11 +885,12 @@
     if(!list.length){toast('No hay circuitos cerrados para exportar.');return;}
     const fields=['circuito_id','fecha_operacion','equipo','patente','operador','turno','litros_cargados',
       'limite_velocidad_kmh','inicio_iso','fin_iso','distancia_km','velocidad_max_kmh',
-      'muestras_exceso','litros_por_km','puntos_esperados','estado_local','sincronizado_en_iso'];
+      'muestras_exceso','litros_por_km','puntos_esperados','flujometro_aplica','flujometro_id','flujometro_lectura_inicio','flujometro_lectura_termino','flujometro_unidad','flujometro_volumen_l','estado_local','sincronizado_en_iso'];
     const rows=list.map(c=>{const r=c.resumen,km=c.totalMetros/1000;
       return [r.circuito_id,r.fecha_operacion,r.equipo,r.patente,r.operador,r.turno,r.litros_cargados,
         r.limite_velocidad_kmh,r.inicio_iso,r.fin_iso,round(km,3),c.velocidad_max_kmh,
         c.muestras_exceso,km>0?round(r.litros_cargados/km,2):'',c.puntos.length,
+        r.flujometro_aplica===true?'SI':'NO',r.flujometro_id||'',r.flujometro_lectura_inicio??'',r.flujometro_lectura_termino??'',r.flujometro_unidad||'',r.flujometro_volumen_l||'',
         c.estado_local,c.sincronizado_en_iso||''];});
     descargarCsv('ICV_Resumen_Circuitos.csv',fields,rows);
   }
@@ -880,32 +932,33 @@
 
   init();
   // Hook deliberadamente solo lectura para pruebas automatizadas; no altera telemetría.
-  window.ICV_RIEGO_DIAG=Object.freeze({version:'0.5.0',getState:()=>({activo:!!estado.circuito,puntos:estado.circuito?estado.circuito.puntos.length:0,regando:estado.circuito?estado.circuito.regando:false,tiempo_regando_min:estado.circuito?calcularMinutosRiego(estado.circuito):0,distancia_regando_km:estado.circuito?distanciaRegando(estado.circuito):0,distancia_m:estado.circuito?round(estado.circuito.totalMetros,2):0,descartadas:estado.discarded,estado_local:estado.circuito?estado.circuito.estado_local:'SIN_CIRCUITO',demo:demoQuery})});
+  window.ICV_RIEGO_DIAG=Object.freeze({version:'0.6.0',getState:()=>({activo:!!estado.circuito,puntos:estado.circuito?estado.circuito.puntos.length:0,regando:estado.circuito?estado.circuito.regando:false,tiempo_regando_min:estado.circuito?calcularMinutosRiego(estado.circuito):0,distancia_regando_km:estado.circuito?distanciaRegando(estado.circuito):0,distancia_m:estado.circuito?round(estado.circuito.totalMetros,2):0,descartadas:estado.discarded,estado_local:estado.circuito?estado.circuito.estado_local:'SIN_CIRCUITO',demo:demoQuery})});
 })();
 </script>
 <script>
-/* Etapa 4 - Instalación PWA. Sin acceso a datos ni modificación del GPS. */
+/* v0.6 · Botón visible: instalar nativamente si se ofrece el evento, o guiar desde el navegador. */
 (()=>{
-  const btn=document.getElementById('installPwaButton');
-  const state=document.getElementById('pwaOfflineState');
+  const btn=document.getElementById('installPwaButton'),hint=document.getElementById('pwaInstallHint'),offline=document.getElementById('pwaOfflineState');
   let installPrompt=null;
+  const instalada=()=>window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+  const ios=()=>/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  function refrescar(){btn.textContent=instalada()?'✓ Aplicación instalada':'⬇ Instalar aplicación en esta tablet';}
   if ('serviceWorker' in navigator && window.isSecureContext) {
-    navigator.serviceWorker.register('./sw.js', {scope:'./'})
+    navigator.serviceWorker.register('./sw.js',{scope:'./'})
       .then(()=>navigator.serviceWorker.ready)
-      .then(()=>{state.textContent='Interfaz base preparada para abrir sin red. El mapa de calles requiere conexión; conserva esta app en primer plano para registrar GPS.';})
-      .catch(err=>{state.textContent='No se pudo preparar el modo offline: '+err.message;});
-  } else {
-    state.textContent='El modo offline instalable requiere HTTPS y un navegador compatible.';
-  }
-  window.addEventListener('beforeinstallprompt',e=>{
-    e.preventDefault();installPrompt=e;btn.hidden=false;
-  });
+      .then(()=>{offline.textContent='Modo sin conexión preparado (interfaz local). El mapa OSM necesita internet.';})
+      .catch(err=>{offline.textContent='Modo offline no preparado: '+err.message;});
+  } else offline.textContent='Para instalar y usar GPS, abre la página HTTPS en un navegador compatible.';
+  window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;refrescar();});
   btn.addEventListener('click',async()=>{
-    if (!installPrompt)return;
-    const prompt=installPrompt;installPrompt=null;btn.hidden=true;
-    try{await prompt.prompt();}catch(err){console.warn('Instalación no disponible:',err);}
+    if(instalada()){hint.textContent='Ya estás utilizando la app instalada. Abre desde el icono de ICV en la pantalla de inicio.';return;}
+    if(installPrompt){const pending=installPrompt;installPrompt=null;try{await pending.prompt();const result=await pending.userChoice;
+        hint.textContent=result.outcome==='accepted'?'Solicitud de instalación aceptada. Busca el ícono ICV.':'Instalación cancelada. Puedes volver a intentarlo desde el menú del navegador.';
+      }catch(e){hint.textContent='Usa el menú ⋮ del navegador → Instalar aplicación / Añadir a pantalla de inicio.';}return;}
+    hint.textContent=ios()?'En Safari pulsa Compartir → Añadir a pantalla de inicio (en algunas versiones, Más → Añadir a pantalla de inicio).':'Abre el menú ⋮ de Chrome/Edge y elige Instalar aplicación o Añadir a pantalla de inicio. Si ya está instalada, ábrela desde su ícono.';
   });
-  window.addEventListener('appinstalled',()=>{btn.hidden=true;state.textContent='La aplicación quedó instalada en este dispositivo.';});
+  window.addEventListener('appinstalled',()=>{refrescar();hint.textContent='Aplicación instalada correctamente.';});
+  refrescar();
 })();
 </script>
 </body>
