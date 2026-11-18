@@ -1,281 +1,312 @@
 <!doctype html>
 <html lang="es-CL">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#D32F2F">
-  <meta name="description" content="Panel piloto de supervisión de circuitos de riego y recorridos GPS ICV.">
-  <title>ICV · Panel de supervisión GPS</title>
-  <link rel="manifest" href="./manifest.json">
-  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
-  <script async src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous" onload="window.dispatchEvent(new Event('icv-leaflet-ready'))"></script>
-  <style>
-    :root{--red:#D32F2F;--black:#212121;--bg:#F5F6F8;--txt:#263341;--muted:#687587;--stroke:#DFE4EA;--green:#15804A}
-    *{box-sizing:border-box}html,body{min-height:100%;margin:0}body{background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,'Segoe UI',Arial,sans-serif}
-    a{color:inherit}button,input,select{font:inherit}button{cursor:pointer}[hidden]{display:none!important}
-    button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #D32F2F88;outline-offset:2px}
-    .layout{max-width:1140px;margin:auto;padding-bottom:45px}.top{background:var(--black);color:#fff;border-bottom:5px solid var(--red);padding:19px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-    .mark{background:var(--red);border-radius:12px;display:grid;place-items:center;width:47px;height:47px;font-weight:900;letter-spacing:-1px}.mast{flex:1;min-width:200px}
-    h1,h2,h3,p{margin:0}h1{font-size:21px;letter-spacing:-.5px}h2{font-size:19px;letter-spacing:-.3px}h3{font-size:14px}.eyebrow{font-weight:850;letter-spacing:1.25px;font-size:10px;color:var(--red);text-transform:uppercase;margin-bottom:5px}
-    .top .eyebrow{color:#D9DEE5}.back{border:1px solid #777;border-radius:10px;color:white;padding:9px 13px;text-decoration:none;font-size:12px;font-weight:800;white-space:nowrap}
-    main{padding:18px;display:grid;gap:16px}.card{background:#fff;border:1px solid var(--stroke);border-radius:16px;box-shadow:0 4px 17px #20314508;padding:18px;min-width:0}
-    .between{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.muted{color:var(--muted);font-size:12px;line-height:1.6;margin-top:5px}
-    .tabs{display:flex;gap:8px;flex-wrap:wrap}.tab{border:1px solid var(--stroke);background:#fff;border-radius:10px;min-height:44px;padding:10px 17px;font-weight:750;font-size:13px;color:#536172}.tab[aria-selected="true"]{background:#212121;color:white;border-color:#212121}
-    .filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:15px}.field label{display:block;font-size:12px;font-weight:800;margin-bottom:6px}.field input,.field select{min-width:0;width:100%;height:44px;border:1px solid #CFD6DD;border-radius:10px;padding:10px 12px;background:#fff;color:var(--txt);font-size:13px}
-    .field.wide{grid-column:span 2}.check{display:flex;align-items:center;gap:8px;font-size:12px;color:#546070}.check input{accent-color:var(--red);width:17px;height:17px}
-    .button{border:0;padding:11px 17px;border-radius:10px;min-height:45px;font-weight:850;font-size:13px}.primary{background:var(--red);color:white}.dark{background:var(--black);color:#fff}.light{background:#F5F6F8;border:1px solid #DDE1E5;color:#283444}.button:disabled{opacity:.45;cursor:not-allowed}
-    .notice{background:#FFF4E7;border:1px solid #FFDAB4;color:#80500A;border-radius:10px;padding:11px 13px;font-size:12px;line-height:1.6}
-    .stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.stat{background:#F7F8FA;border:1px solid #ECEFF2;padding:13px;border-radius:11px}.stat span{display:block;font-size:11px;color:#677581;font-weight:700}.stat strong{display:block;font-size:24px;letter-spacing:-.6px;margin-top:4px;font-variant-numeric:tabular-nums}
-    .chart{display:grid;gap:9px;margin-top:13px}.bar-row{display:grid;grid-template-columns:minmax(72px,1fr) 3fr 50px;gap:9px;align-items:center;font-size:11px;color:#586675}.bar-bg{height:9px;border-radius:99px;background:#F0F1F4;overflow:hidden}.bar-fill{height:100%;background:#D32F2F;border-radius:99px}
-    .scroll{overflow:auto;margin-top:12px;border:1px solid var(--stroke);border-radius:12px;max-height:420px}table{width:100%;border-collapse:collapse;min-width:800px;font-size:12px}thead{position:sticky;top:0;background:#F3F5F7}th,td{text-align:left;padding:11px 12px;border-bottom:1px solid #EBEFF1;white-space:nowrap}th{font-size:11px;font-weight:850;color:#4C5C6D}tbody tr:last-child td{border:0}
-    .tag{display:inline-flex;background:#FFF1D9;color:#8B5B02;border-radius:6px;padding:4px 7px;font-size:10px;font-weight:850}.tag.ok{color:#147B42;background:#E4F4EA}.tag.demo{color:#6A55A4;background:#EEE9F8}
-    .link-btn{background:none;border:0;text-decoration:underline;font-size:12px;color:#AF2525;font-weight:850;padding:5px 2px;cursor:pointer}
-    .map-box{height:320px;border:1px solid var(--stroke);border-radius:12px;overflow:hidden;background:#EFF2F5}.map{height:100%;width:100%}.map svg{height:100%;width:100%}
-    .legend{display:flex;gap:15px;font-size:12px;color:#637180;margin:12px 0;flex-wrap:wrap}.swatch{width:16px;height:4px;background:var(--green);display:inline-block;vertical-align:middle;margin-right:5px;border-radius:4px}.swatch.red{background:var(--red)}
-    .loading{font-size:12px;color:#53616F;padding:13px 0}.error{color:#9A2626;background:#FFF0F0;border:1px solid #FFD4D4;border-radius:10px;padding:10px 13px;font-size:12px;line-height:1.5}
-    .footer{text-align:center;padding:10px;color:#8993A1;font-size:11px;line-height:1.5}
-    @media(min-width:760px){main{padding:22px}.filters{grid-template-columns:repeat(4,minmax(0,1fr))}.field.wide{grid-column:span 2}.stat-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.map-box{height:400px}}
-  </style>
-</head>
-<body>
-<div class="layout">
-<header class="top"><div class="mark">ICV</div><div class="mast"><div class="eyebrow">Salares Norte · Operaciones Mina</div><h1>Panel de supervisión GPS</h1></div><a class="back" href="./index.html">← Operador</a></header>
-<main>
-  <div class="notice">Versión piloto para pruebas. El panel local muestra solo circuitos de este dispositivo. La consulta central exige una credencial de supervisión independiente del token de registro. No reemplaza una plataforma corporativa con control de acceso.</div>
-  <section class="card">
-    <div class="between"><div><p class="eyebrow">Origen de datos</p><h2>Consolidados y recorridos</h2><p class="muted">Selecciona la fuente: registros locales u operaciones recibidas por Google Sheets.</p></div><div class="tabs" role="tablist" aria-label="Fuente de datos"><button id="localTab" class="tab" aria-selected="true" type="button">En este teléfono</button><button id="cloudTab" class="tab" aria-selected="false" type="button">Google Sheets</button></div></div>
-    <div id="cloudCredentials" hidden>
-      <div class="filters">
-        <div class="field wide"><label for="apiUrl">URL del backend Apps Script (/exec)</label><input type="url" id="apiUrl" spellcheck="false" autocomplete="off" placeholder="https://script.google.com/macros/s/.../exec"></div>
-        <div class="field wide"><label for="superToken">SUPERVISOR_TOKEN (distinto de INGEST_TOKEN)</label><input type="password" id="superToken" autocomplete="off" spellcheck="false" placeholder="Credencial del supervisor"></div>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#D32F2F"><title>ICV · Supervisión Control de Riego</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
+<link rel="icon" href="./icons/icon-192.png">
+<script async src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous" onload="window.dispatchEvent(new Event('icv-leaflet-ready'))"></script>
+<style>
+:root{--red:#D32F2F;--deep:#A71A1A;--black:#212121;--bg:#F4F5F7;--border:#DBE0E6;--muted:#687484;--green:#15964C;--blue:#2363AB}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);font-family:system-ui,-apple-system,'Segoe UI',Arial,sans-serif;color:#26313D}button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}[hidden]{display:none!important}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #D32F2F88;outline-offset:2px}
+.topbar{height:86px;background:var(--black);border-bottom:5px solid var(--red);color:#fff;display:flex;align-items:center;gap:17px;padding:12px 21px}
+.brand-img{width:79px;height:57px;object-fit:contain;background:#fff;padding:4px;border-radius:7px}.brand-name{font-size:22px;font-weight:850;line-height:1.1}.brand-sub{font-size:11px;letter-spacing:1.15px;color:#CDD2D8;font-weight:750}.tag-role{background:var(--red);padding:8px 12px;border-radius:999px;font-size:12px;font-weight:850;white-space:nowrap}.top-right{margin-left:auto;display:flex;align-items:center;gap:11px}.top-meta{font-size:12px;color:#DBDFE4}.logout{background:#424448;color:#fff;border:1px solid #65686D;border-radius:9px;padding:10px 13px;font-size:12px;font-weight:800}
+.shell{display:grid;grid-template-columns:206px minmax(0,1fr);min-height:calc(100vh - 86px)}.sidebar{background:linear-gradient(180deg,#26272A,#34383B);padding:16px 10px;color:#fff;display:flex;flex-direction:column;gap:7px}.navlink{border:0;background:transparent;text-decoration:none;color:#E6E8EC;padding:14px 13px;border-radius:10px;font-size:13px;font-weight:750;display:flex;gap:11px;align-items:center}.navlink:hover,.navlink.active{background:var(--red);color:#fff}.nav-icon{font-size:18px}.sidebar-footer{margin-top:auto;font-size:11px;color:#D0D4DA;padding:16px 10px;border-top:1px solid #555}.content{min-width:0;padding:18px;display:grid;gap:14px;align-content:start}.panel{background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 3px 15px rgba(28,38,48,.04);padding:16px;min-width:0}.panel-red{font-size:16px;color:#fff;background:var(--red);padding:12px 15px;border-radius:9px 9px 0 0;margin:-16px -16px 13px;font-weight:900}.headerline{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}.title{font-size:20px;font-weight:850;line-height:1.3}.sub{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5}.eyebrow{font-size:10px;letter-spacing:1.1px;color:var(--red);font-weight:950;margin-bottom:5px;text-transform:uppercase}
+.filters{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.f-field{min-width:0}.f-field label{display:block;font-size:11px;font-weight:850;margin-bottom:5px;color:#46525F}.f-field input,.f-field select{width:100%;height:42px;border:1px solid #D2D8DF;border-radius:9px;padding:8px 10px;font-size:13px;background:#fff;color:#26313D;min-width:0}.f-field.wide{grid-column:span 2}.f-field.buttons{display:flex;align-items:end;gap:7px}.f-field.buttons .btn{flex:1}.check{font-size:12px;display:flex;align-items:center;gap:7px;min-height:38px}.check input{width:18px;height:18px;accent-color:var(--red)}
+.btn{border:0;border-radius:10px;min-height:43px;padding:10px 14px;font-size:12px;font-weight:850;white-space:nowrap}.btn.red{color:#fff;background:var(--red)}.btn.black{color:#fff;background:var(--black)}.btn.outline{color:#26313D;background:#F6F7F9;border:1px solid #D9DEE4}.btn.lightred{background:#FFEAEA;color:#A51E22;border:1px solid #F0B5B5}.actions{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+.kpi-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.kpi{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;min-width:0}.kpi:first-child{background:var(--red);color:#fff;border-color:var(--red)}.kpi .icon{font-size:23px}.kpi .name{font-size:11px;color:#647082;margin-top:3px;font-weight:750}.kpi:first-child .name{color:#fff}.kpi .value{font-size:clamp(19px,2.2vw,30px);font-weight:950;margin-top:8px;letter-spacing:-.6px;white-space:nowrap}.two-col{display:grid;grid-template-columns:1.42fr 1fr;gap:14px;min-width:0}.report-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:14px}.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.chart-heading{font-size:13px;font-weight:850;margin:4px 0 10px}.chart-bars{display:grid;gap:7px}.bar{display:grid;grid-template-columns:85px 1fr 85px;gap:7px;align-items:center;font-size:11px}.bar .track{height:13px;background:#EFF1F4;border-radius:20px;overflow:hidden}.bar .fill{background:var(--red);height:100%;border-radius:20px}.bar .fill.gray{background:#788591}.bar .label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bar strong{text-align:right;font-size:11px}
+.map-box{height:350px;background:#EDF0F3;border:1px solid var(--border);border-radius:12px;overflow:hidden;position:relative}.map-box #routeMap,.map-box #routeSvg{height:100%;width:100%}.map-box #routeSvg svg{height:100%;width:100%}.map-placeholder{height:100%;display:grid;place-items:center;text-align:center;color:#697683;padding:25px}.map-placeholder strong{display:block;font-size:15px;color:#27323D}.map-legend{display:flex;gap:15px;flex-wrap:wrap;margin-top:11px;font-size:12px;color:#56616C}.swatch{display:inline-block;width:21px;height:5px;background:#16A34A;margin-right:6px;border-radius:5px;vertical-align:middle}.swatch.gray{background:#768595}
+.scroll{overflow:auto;max-height:380px;border:1px solid var(--border);border-radius:10px;margin-top:12px}table{border-collapse:collapse;width:100%;min-width:1060px;font-size:11px}thead{position:sticky;top:0;background:#F0F2F5;z-index:1}th,td{text-align:left;padding:11px 10px;border-bottom:1px solid #E8EBEE;white-space:nowrap}th{font-weight:900;font-size:11px;color:#394657}.flag{display:inline-block;padding:4px 7px;border-radius:6px;font-size:10px;font-weight:850;background:#E7F6EC;color:#13793C}.flag.wait{background:#FFF0D3;color:#8B5800}.route-btn{border:0;background:none;text-decoration:underline;color:#AB2026;font-weight:850;font-size:12px}
+.muted{color:var(--muted);font-size:11px;line-height:1.5}.notice{background:#FFF3E5;border:1px solid #F7D0A3;color:#79480A;font-size:12px;padding:10px 12px;border-radius:9px;line-height:1.5}.error{background:#FFEEEE;border:1px solid #EFBDBD;color:#9C2323;padding:11px 12px;border-radius:10px;font-size:12px;line-height:1.6}.success{color:#137D42;background:#EDF8F0;padding:10px 12px;border-radius:10px;font-size:12px}.report-options{display:flex;flex-wrap:wrap;gap:9px}.report-options .btn{flex:1}.foot{background:var(--black);color:#D5DAE0;padding:16px 20px;font-size:11px;border-top:4px solid var(--red)}
+.login-backdrop{min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,#212121,#444);padding:20px}.login-card{width:min(480px,100%);background:#fff;border-radius:18px;padding:26px;box-shadow:0 25px 75px #0004}.login-card img{width:95px;height:66px;object-fit:contain}.login-card h1{font-size:24px;margin:14px 0 7px}.login-card p{font-size:13px;color:#66717F;line-height:1.5}.login-card label{display:block;font-size:12px;font-weight:850;margin-top:16px;margin-bottom:7px}.login-card input{width:100%;border:1px solid #CBD2DB;border-radius:10px;padding:12px 13px;min-height:48px}.login-card .pin{font-size:27px;letter-spacing:9px;text-align:center}.login-card button{width:100%;margin-top:16px}.login-card details{margin-top:15px;padding:8px;border:1px solid #E5E8ED;border-radius:9px}.login-card summary{font-size:12px;font-weight:750;cursor:pointer}.login-card .error{margin-top:14px}
+@media(max-width:1250px){.filters{grid-template-columns:repeat(3,minmax(0,1fr))}.kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.two-col,.report-grid{grid-template-columns:1fr}.map-box{height:400px}}
+@media(max-width:750px){.topbar{height:auto;min-height:80px;flex-wrap:wrap}.shell{grid-template-columns:1fr}.sidebar{flex-direction:row;overflow:auto;padding:9px}.sidebar-footer{display:none}.navlink{white-space:nowrap;padding:10px 12px}.content{padding:10px}.filters,.chart-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.f-field.wide{grid-column:span 2}.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.map-box{height:280px}.brand-name{font-size:17px}.tag-role{display:none}}
+@media print{body{background:#fff!important}.sidebar,.top-right,.panel-filters,.no-print,.login-backdrop,.route-btn{display:none!important}.shell{display:block}.content{padding:0}.panel,.kpi{break-inside:avoid;box-shadow:none}.scroll{overflow:visible;max-height:none}table{min-width:0;font-size:8px}th,td{padding:5px}.map-box{height:230px}.topbar{background:#fff;color:#000;border-bottom:2px solid #000}.kpi:first-child{background:#fff;color:#000;border-color:#ccc}.kpi:first-child .name{color:#444}.foot{background:#fff;color:#333}}
+</style>
+</head><body>
+<section id="loginGate" class="login-backdrop">
+  <form id="loginForm" class="login-card" autocomplete="off">
+    <img src="./icons/logo-icv.jpg" alt="ICV"><h1>Acceso de Supervisor</h1>
+    <p>Control de Riego y Telemetría GPS · Salares Norte. El acceso se valida en Google Apps Script.</p>
+    <label for="loginPin">Código de supervisor</label><input id="loginPin" type="password" class="pin" inputmode="numeric" pattern="[0-9]{4,8}" maxlength="8" placeholder="••••" required autocomplete="off">
+    <details><summary>Configuración del receptor · solo primera vez</summary>
+      <label for="loginUrl">URL de Apps Script (/exec)</label><input id="loginUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec" spellcheck="false" autocomplete="off">
+    </details>
+    <button class="btn red" id="loginBtn" type="submit">Ingresar al panel</button>
+    <div class="error" id="loginError" role="alert" hidden></div>
+    <p style="margin-top:12px">PIN inicial de pruebas: <strong>solicítalo al administrador</strong>. No es una autenticación corporativa de producción.</p>
+    <p><a href="./index.html">← Volver al operador</a></p>
+  </form>
+</section>
+<div id="supervisorApp" hidden>
+<header class="topbar">
+  <img class="brand-img" src="./icons/logo-icv.jpg" alt="ICV"><div><div class="brand-sub">SALARES NORTE · OPERACIONES MINA</div><div class="brand-name">Control de Riego & GPS</div></div>
+  <span class="tag-role">SUPERVISOR</span><div class="top-right"><span class="top-meta" id="topDate"></span><button id="logoutBtn" class="logout">Cerrar sesión</button></div>
+</header>
+<div class="shell">
+  <nav class="sidebar" aria-label="Navegación supervisión">
+    <a class="navlink active" href="#resumen"><span class="nav-icon">▥</span>Panel General</a>
+    <a class="navlink" href="#mapa"><span class="nav-icon">⌖</span>Mapa de recorridos</a>
+    <a class="navlink" href="#circuitos"><span class="nav-icon">▤</span>Circuitos</a>
+    <a class="navlink" href="#reportes"><span class="nav-icon">↓</span>Reportes</a>
+    <a class="navlink" href="#config"><span class="nav-icon">⚙</span>Configuración</a>
+    <a class="navlink" href="./index.html"><span class="nav-icon">←</span>Operador</a>
+    <div class="sidebar-footer">ICV · Salares Norte<br>Consulta central por PIN y sesión temporal.</div>
+  </nav>
+  <main class="content">
+    <section class="panel panel-filters" id="resumen">
+      <div class="headerline"><div><div class="eyebrow">SUPERVISIÓN · PANEL GENERAL</div><div class="title">Control de riego y supresión de polvo</div><p class="sub">Filtros aplicados a indicadores, circuitos y reportes. Información recibida, no seguimiento en vivo.</p></div>
+        <div class="actions"><button class="btn black" type="button" id="sourceCloud">Google Sheets</button><button class="btn outline" type="button" id="sourceLocal">Esta tablet</button></div></div>
+      <div class="filters" style="margin-top:14px">
+        <div class="f-field"><label for="desde">Desde</label><input id="desde" type="date"></div>
+        <div class="f-field"><label for="hasta">Hasta</label><input id="hasta" type="date"></div>
+        <div class="f-field"><label for="equipoFiltro">Equipo / patente</label><input id="equipoFiltro" type="search" placeholder="Todos"></div>
+        <div class="f-field"><label for="sectorFiltro">Área / sector</label><select id="sectorFiltro"><option value="">Todos</option></select></div>
+        <div class="f-field"><label for="puntoFiltro">Punto de carguío</label><select id="puntoFiltro"><option value="">Todos</option><option value="TK-41">TK-41</option><option value="TK-42">TK-42</option><option value="OTROS">Otros</option><option value="SIN REGISTRO">Sin registro</option></select></div>
+        <div class="f-field"><label for="turnoFiltro">Turno</label><select id="turnoFiltro"><option value="">Todos</option><option value="DIA">Día</option><option value="NOCHE">Noche</option></select></div>
+        <div class="f-field buttons"><button class="btn red" type="button" id="consultarBtn">↻ Consultar datos</button></div>
+        <div class="f-field" style="grid-column:span 2"><label class="check"><input id="incluirDemo" type="checkbox">Incluir circuitos DEMO y pruebas</label></div>
       </div>
-      <p class="muted">La credencial solo permanece en memoria mientras está abierta esta página. No la publiques en GitHub ni la ingreses en un dispositivo compartido.</p>
+      <p class="sub" id="status" role="status" aria-live="polite">Inicia sesión para consultar datos.</p>
+      <div class="error" id="panelError" hidden></div>
+      <div class="notice" id="recorteWarning" hidden>La consulta fue recortada por el límite de Apps Script. Acota el período antes de descargar reportes para evitar totales incompletos.</div>
+    </section>
+    <section class="kpi-grid" aria-label="Indicadores filtrados">
+      <div class="kpi"><div class="icon">▣</div><div class="name">Circuitos registrados</div><div class="value" id="kCircuitos">0</div></div>
+      <div class="kpi"><div class="icon">💧</div><div class="name">Agua cargada</div><div class="value" id="kAgua">0 L</div></div>
+      <div class="kpi"><div class="icon">⚗</div><div class="name">Supresor cargado</div><div class="value" id="kSupresor">0 kg</div></div>
+      <div class="kpi"><div class="icon">⌁</div><div class="name">Distancia regando</div><div class="value" id="kRiegoKm">0 km</div></div>
+      <div class="kpi"><div class="icon">◷</div><div class="name">Tiempo regando</div><div class="value" id="kRiegoHoras">0 h</div></div>
+      <div class="kpi"><div class="icon">▦</div><div class="name">Sectores atendidos</div><div class="value" id="kSectores">0</div></div>
+    </section>
+    <div class="two-col">
+      <section class="panel" id="mapa"><div class="panel-red">⌖ · Mapa de recorridos sincronizados</div>
+        <div class="headerline"><div class="title" id="routeTitle">Selecciona un circuito</div><button class="btn outline no-print" id="clearRoute">Limpiar mapa</button></div>
+        <p class="sub" id="routeSub">Las rutas estarán disponibles al presionar «Ver ruta» en la tabla. No hay GPS en vivo en esta versión.</p>
+        <div class="map-box" style="margin-top:11px"><div id="routeMap" hidden></div><div id="routeSvg" hidden></div><div id="routePlaceholder" class="map-placeholder"><div><strong>Esperando selección de recorrido</strong><p>El mapa distinguirá tramos regando (verde) y desplazamiento (gris).</p></div></div></div>
+        <div class="map-legend"><span><i class="swatch"></i>Regando</span><span><i class="swatch gray"></i>En desplazamiento</span><span>● Posición final del circuito</span></div>
+      </section>
+      <section class="panel"><div class="panel-red">▥ · Distribución de carga</div>
+        <div class="chart-grid"><div><div class="chart-heading">Agua cargada por día (L)</div><div id="chartAgua" class="chart-bars"></div></div>
+        <div><div class="chart-heading">Supresor cargado por día (kg)</div><div id="chartSupresor" class="chart-bars"></div></div></div>
+        <p class="sub" style="margin-top:12px">Los volúmenes reflejan cargas registradas, no necesariamente cantidades efectivamente aplicadas.</p>
+      </section>
     </div>
-    <div class="filters">
-      <div class="field"><label for="fechaDesde">Desde</label><input id="fechaDesde" type="date"></div>
-      <div class="field"><label for="fechaHasta">Hasta</label><input id="fechaHasta" type="date"></div>
-      <div class="field"><label for="filterEquipo">Equipo o patente</label><input id="filterEquipo" type="search" placeholder="Filtrar equipos"></div>
-      <div class="field"><label for="filterTurno">Turno</label><select id="filterTurno"><option value="">Todos</option><option value="DIA">Día</option><option value="NOCHE">Noche</option></select></div>
-      <div class="field wide"><label class="check" for="includeDemo"><input id="includeDemo" type="checkbox"> Incluir circuitos DEMO</label></div>
-      <div class="field wide"><button id="consultar" class="button primary" type="button">↻ Consultar circuitos</button> <button id="exportar" class="button light" type="button" disabled>↓ CSV resumen</button></div>
+    <section class="panel" id="circuitos"><div class="panel-red">▤ · Últimos circuitos y trazabilidad</div>
+      <div class="headerline"><p class="sub" id="tableCount">0 registros</p><button class="btn outline no-print" id="exportCsvQuick">↓ CSV</button></div>
+      <div class="scroll"><table><thead><tr><th>Fecha</th><th>Equipo</th><th>Punto de carguío</th><th>Agua (L)</th><th>Supresor (kg)</th><th>Sector</th><th>Km total</th><th>Km regando</th><th>Min. riego</th><th>Estado</th><th>Ruta</th></tr></thead><tbody id="tbody"></tbody></table></div>
+    </section>
+    <div class="report-grid">
+      <section class="panel"><div class="panel-red">▦ · Resumen por área / sector</div>
+        <div class="scroll" style="max-height:250px"><table style="min-width:550px"><thead><tr><th>Sector</th><th>Circuitos</th><th>Agua (L)</th><th>Supresor (kg)</th><th>Km regando</th></tr></thead><tbody id="sectorTbody"></tbody></table></div>
+      </section>
+      <section class="panel" id="reportes"><div class="panel-red">↓ · Generar informe</div>
+        <div class="title" style="font-size:15px">Reportes por período, equipo y sector</div>
+        <p class="sub">El informe utiliza los filtros seleccionados arriba. Incluye agua cargada, supresor en kg, sectores atendidos, circuitos y kilómetros regando.</p>
+        <div class="report-options" style="margin-top:15px"><button class="btn red" id="exportXlsx">↓ Excel (.xlsx)</button><button class="btn black" id="exportPdf">↓ PDF (imprimir)</button><button class="btn outline" id="exportCsv">↓ CSV</button></div>
+        <p class="muted" style="margin-top:12px">PDF utiliza el diálogo «Guardar como PDF» del navegador. Excel genera un .xlsx local, sin servicios de pago.</p>
+      </section>
     </div>
-    <p class="muted" id="panelState" role="status" aria-live="polite">Selecciona filtros para consultar.</p>
-    <div id="panelError" class="error" hidden></div>
-  </section>
-  <section class="card">
-    <div class="between"><div><p class="eyebrow">Indicadores</p><h2>Balance de circuitos</h2></div><span id="sourceBadge" class="tag">LOCAL</span></div>
-    <div class="stat-grid" style="margin-top:14px">
-      <div class="stat"><span>Circuitos</span><strong id="kpiCircuitos">0</strong></div>
-      <div class="stat"><span>Agua cargada</span><strong id="kpiLitros">0 L</strong></div>
-      <div class="stat"><span>Distancia</span><strong id="kpiKm">0 km</strong></div>
-      <div class="stat"><span>Máx. registrada</span><strong id="kpiVel">0 km/h</strong></div>
-      <div class="stat"><span>Muestras exceso</span><strong id="kpiExceso">0</strong></div>
-    </div>
-    <div id="chart" class="chart" aria-label="Distribución de agua cargada por equipo"></div>
-  </section>
-  <section class="card">
-    <div class="between"><div><p class="eyebrow">Detalle de registros</p><h2>Listado de circuitos</h2></div><span id="tableCount" class="tag">0 registros</span></div>
-    <div class="scroll"><table><thead><tr><th>Fecha</th><th>Equipo</th><th>Operador</th><th>Turno</th><th>Agua (L)</th><th>Km</th><th>Vel. máx.</th><th>Excesos</th><th>Estado</th><th>Mapa</th></tr></thead><tbody id="tbody"></tbody></table></div>
-    <p class="muted">Los resultados del panel central se limitan a 31 días por consulta y a 250 circuitos de los últimos 5.000 registros examinados. Cuando se indique un recorte, reduce el rango.</p>
-  </section>
-  <section class="card" id="routeCard" hidden>
-    <div class="between"><div><p class="eyebrow">Reconstrucción de ruta</p><h2 id="routeTitle">Recorrido</h2><p class="muted" id="routeMeta"></p></div><button id="closeRoute" type="button" class="button light">Cerrar</button></div>
-    <div class="map-box" style="margin-top:12px"><div id="routeMap" class="map"></div><div id="routeSvg" class="map" hidden></div></div>
-    <div class="legend"><span><i class="swatch"></i>Velocidad normal</span><span><i class="swatch red"></i>Sobre el límite</span><span>La línea no sustituye un sistema GPS homologado</span></div>
-    <p class="muted" id="routeStatus"></p>
-  </section>
-</main>
-<footer class="footer">ICV · Control de Riego & Telemetría GPS · Supervisión v0.4.0 · Uso piloto, acceso restringido mediante credencial de prueba.</footer>
+    <section class="panel no-print" id="config"><div class="panel-red">⚙ · Configuración técnica · supervisor</div>
+      <p class="sub">En una tablet nueva configura el receptor una sola vez para que el operador sincronice cuando exista internet. El panel del operador no muestra estos campos.</p>
+      <form id="configForm" class="filters" style="margin-top:14px">
+        <div class="f-field wide"><label for="syncUrl">URL /exec</label><input id="syncUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" required></div>
+        <div class="f-field wide"><label for="syncToken">INGEST_TOKEN (escritura de circuitos)</label><input id="syncToken" type="password" placeholder="64 caracteres" autocomplete="off" required></div>
+        <div class="f-field"><label class="check"><input type="checkbox" id="recordarToken">Recordar token en tablet</label></div>
+        <div class="f-field"><label class="check"><input type="checkbox" id="enviarDemo">Permitir DEMO</label></div>
+        <div class="f-field buttons"><button class="btn red" type="submit">Guardar configuración</button></div>
+      </form><p class="muted">Nunca publiques las credenciales en GitHub. Guardar el token en la tablet es solo para piloto y no constituye seguridad de producción.</p>
+    </section>
+  </main>
+</div>
+<footer class="foot">ICV · Ingeniería Civil Vicente · Faena Salares Norte · Control de Riego & GPS v0.5 · Informes con trazabilidad de circuitos recibidos.</footer>
 </div>
 <script>
 'use strict';
-(() => {
+(()=>{
  const $=id=>document.getElementById(id);
- const state={fuente:'local',filas:[],visibles:[],cloudUrl:'',secret:'',map:null,mapTile:null,mapLayers:[],route:null};
- const dateZone=(d)=>{const p=new Intl.DateTimeFormat('en-US',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);const a=k=>p.find(x=>x.type===k).value;return `${a('year')}-${a('month')}-${a('day')}`};
- const n=(v)=>Number.isFinite(Number(v))?Number(v):0;
- const fmt=(v,d=0)=>new Intl.NumberFormat('es-CL',{maximumFractionDigits:d,minimumFractionDigits:d}).format(n(v));
- const el=(tag,cls,text)=>{const x=document.createElement(tag);if(cls)x.className=cls;if(text!==undefined)x.textContent=String(text);return x};
- const error=(msg)=>{$('panelError').hidden=!msg;$('panelError').textContent=msg||''};
- const status=(msg)=>{$('panelState').textContent=msg};
- const showCloud=(yes)=>{
-  state.fuente=yes?'cloud':'local';$('cloudCredentials').hidden=!yes;
-  $('cloudTab').setAttribute('aria-selected',String(yes));$('localTab').setAttribute('aria-selected',String(!yes));
-  $('sourceBadge').textContent=yes?'GOOGLE SHEETS':'LOCAL';
-  state.filas=[];state.visibles=[];render();error('');
-  status(yes?'Ingresa tu SUPERVISOR_TOKEN y consulta los circuitos.':'Circuitos guardados en este dispositivo.');
- };
- const isDemo=(r)=>r.modo==='DEMO'||String(r.circuito_id||'').startsWith('TEST_');
- const localRows=()=>{
-  let data=[];
-  try{data=JSON.parse(localStorage.getItem('icv_riego_v1_circuitos_pendientes')||'[]')}catch(_){}
-  if(!Array.isArray(data))return [];
-  return data.filter(c=>c&&c.resumen).map(c=>{
-    const r=c.resumen, p=Array.isArray(c.puntos)?c.puntos:[];
-    return {circuito_id:r.circuito_id,fecha_operacion:r.fecha_operacion,equipo:r.equipo,patente:r.patente,operador:r.operador,turno:r.turno,
-      litros_cargados:n(r.litros_cargados),distancia_km:n(c.totalMetros)/1000,velocidad_max_kmh:n(c.velocidad_max_kmh),
-      muestras_exceso:n(c.muestras_exceso),puntos_recibidos:p.length,limite_velocidad_kmh:n(r.limite_velocidad_kmh),
-      estado:c.estado_local==='SINCRONIZADO'?'COMPLETO':'PENDIENTE',modo:c.modo||'',_route:p};
-  });
- };
- const urlValid=(url)=>/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url);
- const hex=(bytes)=>Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
- const hmac=async(text,key)=>{
-  if(!crypto||!crypto.subtle)throw new Error('La consulta requiere HTTPS y Web Crypto.');
-  const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(key),{name:'HMAC',hash:'SHA-256'},false,['sign']);
-  return hex(new Uint8Array(await crypto.subtle.sign('HMAC',k,new TextEncoder().encode(text))));
- };
+ const state={sid:'',sessionKey:'',url:'',source:'cloud',rows:[],visible:[],partial:false,map:null,tiles:null,layers:[],selected:null};
+ const cfgKey='icv_riego_v1_sync_config',tokenLocal='icv_riego_v1_token_local',tokenSession='icv_riego_v1_token_sesion';
+ const fmt=(v,d=0)=>new Intl.NumberFormat('es-CL',{minimumFractionDigits:d,maximumFractionDigits:d}).format(Number(v)||0);
+ const num=v=>Number.isFinite(Number(v))?Number(v):0;
+ const el=(tag,cls,txt)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(txt!==undefined)node.textContent=String(txt);return node};
+ const isoDate=d=>{const pts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d),val=k=>pts.find(x=>x.type===k).value;return `${val('year')}-${val('month')}-${val('day')}`};
+ const validUrl=v=>/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(v);
+ const wait=ms=>new Promise(r=>setTimeout(r,ms));
+ const hex=b=>Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');
+ const rand=()=>hex(crypto.getRandomValues(new Uint8Array(16)));
+ const status=v=>{$('status').textContent=v};
+ const error=v=>{$('panelError').hidden=!v;$('panelError').textContent=v||''};
+ const csvSafe=v=>{let s=String(v??'');if(/^[\s]*[=+@\-\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};
+ const downloadBlob=(name,type,data)=>{const url=URL.createObjectURL(new Blob([data],{type})),a=el('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)};
  const jsonp=(url,params)=>new Promise((resolve,reject)=>{
-  const cb='icvAck_'+hex(crypto.getRandomValues(new Uint8Array(10)));
-  let done=false;const script=document.createElement('script');
-  const cleanup=()=>{clearTimeout(timer);script.remove();try{delete window[cb]}catch(_){window[cb]=undefined}};
-  const finish=(e,v)=>{if(done)return;done=true;cleanup();e?reject(e):resolve(v)};
-  const timer=setTimeout(()=>finish(new Error('El backend no respondió dentro de 35 segundos.')),35000);
-  window[cb]=response=>finish(null,response);
-  script.async=true;script.onerror=()=>finish(new Error('No se pudo conectar con Apps Script. Revisa /exec y la nueva implementación.'));
-  const u=new URL(url);for(const [k,v] of Object.entries({...params,prefix:cb}))u.searchParams.set(k,String(v));
-  script.src=u.toString();document.head.append(script);
+   const callback='icvAck_'+rand().slice(0,20),script=el('script');let done=false;
+   const cleanup=()=>{clearTimeout(timer);script.remove();try{delete window[callback]}catch(_){window[callback]=undefined}};
+   const finish=(err,value)=>{if(done)return;done=true;cleanup();err?reject(err):resolve(value)};
+   const timer=setTimeout(()=>finish(new Error('Respuesta de Apps Script agotada (35 s).')),35000);
+   window[callback]=r=>finish(null,r);
+   script.onerror=()=>finish(new Error('No se pudo consultar el backend /exec.'));
+   const u=new URL(url);for(const [k,v] of Object.entries({...params,prefix:callback}))u.searchParams.set(k,String(v));
+   script.src=u.toString();document.head.append(script);
  });
- const cloudRows=async()=>{
-  const url=$('apiUrl').value.trim().replace(/\/+$/,'');const key=$('superToken').value.trim();
-  if(!urlValid(url))throw new Error('Ingresa la URL original de Apps Script que finaliza en /exec.');
-  if(!/^[a-fA-F0-9]{64}$/.test(key))throw new Error('SUPERVISOR_TOKEN debe tener 64 caracteres hexadecimales. No uses INGEST_TOKEN.');
-  const desde=$('fechaDesde').value,hasta=$('fechaHasta').value, demo=$('includeDemo').checked?'1':'0';
-  if(!desde||!hasta||desde>hasta)throw new Error('El rango de fechas es incorrecto.');
-  const dias=(Date.parse(hasta+'T00:00:00Z')-Date.parse(desde+'T00:00:00Z'))/86400000;
-  if(dias>=31)throw new Error('Selecciona un máximo de 31 días inclusivos por consulta.');
-  state.cloudUrl=url;state.secret=key;
-  const ts=Date.now(),sig=await hmac('panel|'+desde+'|'+hasta+'|'+demo+'|'+ts,key);
-  const res=await jsonp(url,{accion:'panel',desde,hasta,demo,ts,sig});
-  if(!res||!res.ok)throw new Error(res?.mensaje||res?.codigo||'Respuesta inválida del backend.');
-  status('Datos confirmados desde Google Sheets · '+res.circuitos.length+' circuitos devueltos'+(res.recorte?' · RESULTADO RECORTADO, reduce el rango de fechas':'')+'.');
-  return Array.isArray(res.circuitos)?res.circuitos:[];
- };
- const filterRows=(rows)=>{
-  const search=$('filterEquipo').value.trim().toLocaleLowerCase('es'), turno=$('filterTurno').value,desde=$('fechaDesde').value,hasta=$('fechaHasta').value;
-  return rows.filter(r=>{
-   const dia=String(r.fecha_operacion||'');if(dia<desde||dia>hasta)return false;
-   if(!$('includeDemo').checked&&isDemo(r))return false;
-   if(turno&&r.turno!==turno)return false;
-   if(search&&!String(r.equipo+' '+r.patente).toLocaleLowerCase('es').includes(search))return false;
-   return true;
-  });
- };
- const render=()=>{
-  state.visibles=filterRows(state.filas);
-  const rows=state.visibles;
-  $('kpiCircuitos').textContent=fmt(rows.length);
-  $('kpiLitros').textContent=fmt(rows.reduce((a,x)=>a+n(x.litros_cargados),0))+' L';
-  $('kpiKm').textContent=fmt(rows.reduce((a,x)=>a+n(x.distancia_km),0),2)+' km';
-  $('kpiVel').textContent=fmt(Math.max(0,...rows.map(x=>n(x.velocidad_max_kmh))))+' km/h';
-  $('kpiExceso').textContent=fmt(rows.reduce((a,x)=>a+n(x.muestras_exceso),0));
-  $('tableCount').textContent=rows.length+' registros';$('exportar').disabled=!rows.length;
-  const tbody=$('tbody');tbody.replaceChildren();
-  for(const r of rows){
-   const tr=el('tr');
-   for(const v of [r.fecha_operacion,r.equipo+' · '+r.patente,r.operador,r.turno,fmt(r.litros_cargados),fmt(r.distancia_km,2),fmt(r.velocidad_max_kmh)+' km/h',fmt(r.muestras_exceso)])tr.append(el('td','',v));
-   const st=el('td');st.append(el('span','tag '+(r.estado==='COMPLETO'?'ok':''),r.estado));tr.append(st);
-   const td=el('td'),b=el('button','link-btn','Ver ruta');b.type='button';b.addEventListener('click',()=>openRoute(r));td.append(b);tr.append(td);tbody.append(tr);
-  }
-  if(!rows.length){const tr=el('tr');const td=el('td','','No hay circuitos para estos filtros.');td.colSpan=10;tr.append(td);tbody.append(tr);}
-  const byEquip=new Map();for(const r of rows){const k=String(r.equipo||'Sin equipo');byEquip.set(k,(byEquip.get(k)||0)+n(r.litros_cargados));}
-  const max=Math.max(1,...byEquip.values());const chart=$('chart');chart.replaceChildren();
-  for(const [name,val] of [...byEquip].sort((a,b)=>b[1]-a[1]).slice(0,8)){
-   const row=el('div','bar-row'),lab=el('span','',name),bar=el('div','bar-bg'),fill=el('div','bar-fill'),amt=el('b','',fmt(val)+' L');
-   fill.style.width=(val/max*100).toFixed(1)+'%';bar.append(fill);row.append(lab,bar,amt);chart.append(row);
-  }
- };
- const request=async()=>{
-  if(state.fuente==='cloud'&&!navigator.onLine){error('Sin conexión: el panel central requiere internet. Puedes consultar la fuente local.');return;}
-  $('consultar').disabled=true;error('');status('Consultando registros...');
-  try{
-   state.filas=state.fuente==='cloud'?await cloudRows():localRows();
-   if(state.fuente==='local')status(state.filas.length+' circuitos recuperados del almacenamiento de este dispositivo.');
+ const hmac=async(msg,key)=>{const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(key),{name:'HMAC',hash:'SHA-256'},false,['sign']);return hex(new Uint8Array(await crypto.subtle.sign('HMAC',k,new TextEncoder().encode(msg))))};
+ const configOld=()=>{try{return JSON.parse(localStorage.getItem(cfgKey)||'{}')}catch(_){return {}}};
+ function initConfig(){const cfg=configOld();$('loginUrl').value=localStorage.getItem('icv_riego_v05_apiurl')||cfg.url||'';
+   $('syncUrl').value=cfg.url||$('loginUrl').value;$('recordarToken').checked=!!cfg.recordar;$('enviarDemo').checked=!!cfg.permitirDemo;
+   $('syncToken').value=cfg.recordar?(localStorage.getItem(tokenLocal)||''):(sessionStorage.getItem(tokenSession)||'');if(!$('loginUrl').value)$('loginUrl').closest('details').open=true;}
+ async function login(e){e.preventDefault();$('loginError').hidden=true;const btn=$('loginBtn'),url=$('loginUrl').value.trim().replace(/\/+$/,'');
+   if(!validUrl(url)){$('loginError').textContent='Ingresa la URL /exec original de Apps Script.';$('loginError').hidden=false;return;}
+   const pin=$('loginPin').value;if(!/^\d{4,8}$/.test(pin)){$('loginError').textContent='Introduce un PIN de 4 a 8 dígitos.';$('loginError').hidden=false;return;}
+   btn.disabled=true;btn.textContent='Validando acceso…';const requestId=rand();
+   try{
+     await fetch(url,{method:'POST',mode:'no-cors',redirect:'follow',cache:'no-store',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({version:1,accion:'login_supervisor',solicitud_id:requestId,pin})});
+     let response=null;
+     for(let i=0;i<14;i++){await wait(i===0?700:900);response=await jsonp(url,{accion:'login_estado',solicitud_id:requestId});if(!response?.pendiente)break;}
+     if(!response||!response.ok||!response.autenticado||!response.sid||!response.clave_sesion)throw new Error(response?.mensaje||'No se pudo confirmar el acceso. Verifica que el backend v0.5 esté implementado.');
+     state.sid=response.sid;state.sessionKey=response.clave_sesion;state.url=url;
+     localStorage.setItem('icv_riego_v05_apiurl',url);$('loginPin').value='';$('loginGate').hidden=true;$('supervisorApp').hidden=false;
+     status('Acceso autorizado. Consulta los circuitos desde Google Sheets.');await consultar();
+   }catch(err){$('loginError').textContent=err.message;$('loginError').hidden=false;}
+   finally{btn.disabled=false;btn.textContent='Ingresar al panel';}
+ }
+ function logout(){state.sid='';state.sessionKey='';state.rows=[];state.visible=[];state.selected=null;location.href='./supervision.html';}
+ const modeOf=r=>String(r.circuito_id||'').startsWith('TEST_')||r.modo==='DEMO'?'DEMO':'REAL';
+ const normal=r=>({circuito_id:String(r.circuito_id||''),fecha_operacion:String(r.fecha_operacion||''),equipo:String(r.equipo||''),patente:String(r.patente||''),operador:String(r.operador||''),turno:String(r.turno||''),litros_cargados:num(r.litros_cargados),supresor_kg:num(r.supresor_kg),punto_carguio:String(r.punto_carguio||'SIN REGISTRO'),punto_carguio_otro:String(r.punto_carguio_otro||''),area_sector:String(r.area_sector||'Sin especificar'),distancia_km:num(r.distancia_km),distancia_regando_km:num(r.distancia_regando_km),tiempo_regando_min:num(r.tiempo_regando_min),velocidad_max_kmh:num(r.velocidad_max_kmh),limite_velocidad_kmh:num(r.limite_velocidad_kmh)||50,estado:String(r.estado||'PENDIENTE'),modo:modeOf(r),inicio_iso:String(r.inicio_iso||''),_points:r._points||[]});
+ function localRows(){let data=[];try{data=JSON.parse(localStorage.getItem('icv_riego_v1_circuitos_pendientes')||'[]')}catch(_){ }if(!Array.isArray(data))return [];
+   return data.filter(c=>c?.resumen).map(c=>{const r=c.resumen,points=Array.isArray(c.puntos)?c.puntos:[];
+     return normal({...r,distancia_km:num(c.totalMetros)/1000,distancia_regando_km:r.distancia_regando_km??points.reduce((a,p)=>a+(p.regando?num(p.distancia_tramo_m):0),0)/1000,tiempo_regando_min:num(r.tiempo_regando_min),estado:c.estado_local==='SINCRONIZADO'?'COMPLETO':'PENDIENTE',modo:c.modo,_points:points});});
+ }
+ async function cloudRange(start,end,demo){const stamp=Date.now(),sig=await hmac('panel|'+start+'|'+end+'|'+demo+'|'+stamp,state.sessionKey);
+   const res=await jsonp(state.url,{accion:'panel',desde:start,hasta:end,demo,ts:stamp,sig,sid:state.sid});
+   if(!res?.ok)throw new Error(res?.mensaje||res?.codigo||'Consulta no autorizada.');return res;}
+ const toUTC=s=>new Date(s+'T00:00:00Z');const fromUTC=d=>d.toISOString().slice(0,10);
+ async function cloudRows(){const from=$('desde').value,to=$('hasta').value;if(!from||!to||from>to)throw new Error('Revisa el rango de fechas.');
+   const days=Math.round((toUTC(to)-toUTC(from))/86400000)+1;if(days>90)throw new Error('Consulta hasta 90 días por vez. Divide períodos más extensos.');
+   const demo=$('incluirDemo').checked?'1':'0',all=[];state.partial=false;
+   const query=async(a,b,depth=0)=>{const r=await cloudRange(a,b,demo);
+     if(r.recorte){const diff=Math.round((toUTC(b)-toUTC(a))/86400000);
+       if(diff>0&&depth<8){const mid=new Date(toUTC(a).getTime()+Math.floor(diff/2)*86400000);await query(a,fromUTC(mid),depth+1);await query(fromUTC(new Date(mid.getTime()+86400000)),b,depth+1);return;}
+       state.partial=true;
+     }
+     all.push(...(Array.isArray(r.circuitos)?r.circuitos:[]));};
+   for(let t=toUTC(from).getTime();t<=toUTC(to).getTime();){const end=new Date(Math.min(t+29*86400000,toUTC(to).getTime()));
+     await query(fromUTC(new Date(t)),fromUTC(end));t=end.getTime()+86400000;}
+   return [...new Map(all.map(x=>[x.circuito_id,normal(x)])).values()];
+ }
+ function sectorsForFilters(){const select=$('sectorFiltro'),wanted=select.value;
+   const all=[...new Set(state.rows.map(r=>String(r.area_sector||'Sin especificar')))].sort((a,b)=>a.localeCompare(b,'es'));
+   select.replaceChildren(new Option('Todos',''));for(const x of all)select.add(new Option(x,x));select.value=all.includes(wanted)?wanted:'';}
+ function filtered(){const q=$('equipoFiltro').value.trim().toLowerCase(),sector=$('sectorFiltro').value,punto=$('puntoFiltro').value,turno=$('turnoFiltro').value,desde=$('desde').value,hasta=$('hasta').value,dem=$('incluirDemo').checked;
+   return state.rows.filter(r=>(!desde||r.fecha_operacion>=desde)&&(!hasta||r.fecha_operacion<=hasta)&&(!q||(r.equipo+' '+r.patente).toLowerCase().includes(q))&&(!sector||r.area_sector===sector)&&(!punto||r.punto_carguio===punto)&&(!turno||r.turno===turno)&&(dem||r.modo!=='DEMO'));
+ }
+ const aggregates=(rows,key)=>{const m=new Map();for(const r of rows){const k=key(r);if(!m.has(k))m.set(k,{name:k,circuitos:0,agua:0,supresor:0,riego_km:0});
+   const a=m.get(k);a.circuitos++;a.agua+=r.litros_cargados;a.supresor+=r.supresor_kg;a.riego_km+=r.distancia_regando_km;}
+   return [...m.values()].sort((a,b)=>b.agua-a.agua)};
+ function bars(id,rows,kind){const area=$(id);area.replaceChildren();const dat=aggregates(rows,x=>x.fecha_operacion).sort((a,b)=>a.name.localeCompare(b.name)).slice(-12);
+   const max=Math.max(1,...dat.map(x=>x[kind]));if(!dat.length){area.append(el('p','muted','Sin registros para graficar.'));return;}
+   for(const d of dat){const row=el('div','bar');row.append(el('span','label',d.name.slice(5)));
+     const track=el('div','track'),fill=el('div','fill '+(kind==='supresor'?'gray':''));fill.style.width=(d[kind]/max*100).toFixed(1)+'%';track.append(fill);row.append(track,el('strong','',fmt(d[kind],kind==='supresor'?1:0)));area.append(row);}
+ }
+ function render(){state.visible=filtered();const rows=state.visible;
+   $('kCircuitos').textContent=fmt(rows.length);$('kAgua').textContent=fmt(rows.reduce((a,r)=>a+r.litros_cargados,0))+' L';
+   $('kSupresor').textContent=fmt(rows.reduce((a,r)=>a+r.supresor_kg,0),1)+' kg';$('kRiegoKm').textContent=fmt(rows.reduce((a,r)=>a+r.distancia_regando_km,0),2)+' km';
+   $('kRiegoHoras').textContent=fmt(rows.reduce((a,r)=>a+r.tiempo_regando_min,0)/60,2)+' h';
+   $('kSectores').textContent=String(new Set(rows.map(r=>r.area_sector).filter(x=>x&&x!=='Sin especificar')).size);
+   $('tableCount').textContent=rows.length+' circuitos · fuente '+(state.source==='cloud'?'Sheets':'local');
+   const tbody=$('tbody');tbody.replaceChildren();for(const r of rows.slice().sort((a,b)=>b.fecha_operacion.localeCompare(a.fecha_operacion)).slice(0,300)){
+     const tr=el('tr');const punto=r.punto_carguio==='OTROS'?(r.punto_carguio_otro||'Otros'):r.punto_carguio;
+     for(const x of [r.fecha_operacion,r.equipo+' · '+r.patente,punto,fmt(r.litros_cargados),fmt(r.supresor_kg,1),r.area_sector,fmt(r.distancia_km,2),fmt(r.distancia_regando_km,2),fmt(r.tiempo_regando_min,1)])tr.append(el('td','',x));
+     const st=el('td'),flag=el('span','flag '+(r.estado==='COMPLETO'?'':'wait'),r.estado);st.append(flag);tr.append(st);
+     const td=el('td'),btn=el('button','route-btn','Ver ruta');btn.type='button';btn.addEventListener('click',()=>openRoute(r));td.append(btn);tr.append(td);tbody.append(tr);
+   }
+   if(!rows.length){const tr=el('tr'),td=el('td','','Sin circuitos para este filtro.');td.colSpan=11;tr.append(td);tbody.append(tr);}
+   const sectors=aggregates(rows,r=>r.area_sector||'Sin especificar'),sectorBody=$('sectorTbody');sectorBody.replaceChildren();
+   for(const v of sectors){const tr=el('tr');for(const x of [v.name,fmt(v.circuitos),fmt(v.agua),fmt(v.supresor,1),fmt(v.riego_km,2)])tr.append(el('td','',x));sectorBody.append(tr);}
+   bars('chartAgua',rows,'agua');bars('chartSupresor',rows,'supresor');
+   $('recorteWarning').hidden=!state.partial;for(const id of ['exportCsv','exportXlsx','exportPdf','exportCsvQuick'])$(id).disabled=!rows.length||state.partial;
+ }
+ async function consultar(){if(!state.sid)throw new Error('Inicia sesión con PIN.');$('consultarBtn').disabled=true;error('');status('Consultando registros y consolidando filtros…');
+   try{state.rows=state.source==='cloud'?await cloudRows():localRows();sectorsForFilters();render();status((state.source==='cloud'?'Google Sheets':'Esta tablet')+' · '+state.rows.length+' circuitos cargados.'+(state.partial?' · Consulta parcial: reduce fechas.':''));}
+   catch(e){state.rows=[];render();error(e.message);status('Error al consultar.');if(/SESION_EXPIRADA/.test(e.message))setTimeout(logout,1800);}
+   finally{$('consultarBtn').disabled=false;}
+ }
+ function selectSource(source){state.source=source;$('sourceCloud').className='btn '+(source==='cloud'?'black':'outline');$('sourceLocal').className='btn '+(source==='local'?'black':'outline');consultar().catch(console.error);}
+ function svgRoute(points){const root=$('routeSvg');root.replaceChildren();const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 1000 650');root.append(svg);if(!points.length)return;
+   const lat=points.map(p=>num(p.lat)),lon=points.map(p=>num(p.lon)),midlat=(Math.min(...lat)+Math.max(...lat))/2,conv=Math.max(.12,Math.cos(midlat*Math.PI/180));
+   const xs=lon.map(x=>x*conv),cx=(Math.min(...xs)+Math.max(...xs))/2,cy=(Math.min(...lat)+Math.max(...lat))/2;
+   const span=Math.max((Math.max(...xs)-Math.min(...xs))*1.3,(Math.max(...lat)-Math.min(...lat))*1.3,.00005),xx=x=>500+(x*conv-cx)/span*780,yy=y=>325-(y-cy)/span*525;
+   const add=(name,attrs)=>{const a=document.createElementNS('http://www.w3.org/2000/svg',name);for(const [k,v] of Object.entries(attrs))a.setAttribute(k,String(v));svg.append(a);return a};
+   for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i];add('line',{x1:xx(a.lon),y1:yy(a.lat),x2:xx(b.lon),y2:yy(b.lat),stroke:b.regando===true?'#16A34A':'#768595','stroke-width':10,'stroke-linecap':'round'});}
+   const end=points.at(-1);add('circle',{cx:xx(end.lon),cy:yy(end.lat),r:15,fill:'#fff',stroke:'#26313D','stroke-width':5});}
+ function drawRoute(r,points){$('routePlaceholder').hidden=!!points.length;const useMap=!!window.L&&navigator.onLine;
+   $('routeMap').hidden=!useMap;$('routeSvg').hidden=useMap||!points.length;if(!points.length)return;
+   if(!useMap){svgRoute(points);return;}
+   try{if(!state.map){state.map=L.map('routeMap',{preferCanvas:true});}if(!state.tiles)state.tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap colaboradores'}).addTo(state.map);
+     for(const layer of state.layers)state.map.removeLayer(layer);state.layers=[];
+     for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i];state.layers.push(L.polyline([[a.lat,a.lon],[b.lat,b.lon]],{color:b.regando===true?'#16A34A':'#768595',weight:6}).addTo(state.map));}
+     const a=points[0],z=points.at(-1);state.layers.push(L.circleMarker([z.lat,z.lon],{radius:8,color:'#26313D',fillColor:'#fff',fillOpacity:1}).addTo(state.map));
+     if(points.length===1)state.map.setView([a.lat,a.lon],15);else state.map.fitBounds(L.latLngBounds(points.map(p=>[p.lat,p.lon])).pad(.22));setTimeout(()=>state.map.invalidateSize(),150);
+   }catch(e){$('routeMap').hidden=true;$('routeSvg').hidden=false;svgRoute(points);}
+ }
+ async function openRoute(r){$('routeTitle').textContent=r.equipo+' · '+r.patente;$('routeSub').textContent='Cargando trazado de '+r.fecha_operacion+'…';$('mapa').scrollIntoView({behavior:'smooth'});
+   try{let points=[];if(state.source==='local')points=r._points||[];
+     else{const ts=Date.now(),sig=await hmac('ruta|'+r.circuito_id+'|'+ts,state.sessionKey),resp=await jsonp(state.url,{accion:'ruta',circuito_id:r.circuito_id,ts,sig,sid:state.sid});if(!resp?.ok)throw new Error(resp?.mensaje||resp?.codigo||'Ruta no disponible.');points=Array.isArray(resp.puntos)?resp.puntos:[];}
+     state.selected={r,points};drawRoute(r,points);$('routeSub').textContent=points.length+' puntos GPS · '+fmt(r.distancia_regando_km,2)+' km regando · ruta histórica recibida.';
+   }catch(e){$('routeSub').textContent='No fue posible recuperar la ruta: '+e.message;}
+ }
+ function clearMap(){state.selected=null;$('routeTitle').textContent='Selecciona un circuito';$('routeSub').textContent='Presiona Ver ruta para consultar el trazado guardado.';$('routeSvg').hidden=true;$('routeMap').hidden=true;$('routePlaceholder').hidden=false;}
+ function reporteMatriz(){const rows=state.visible,h=['Fecha','ID circuito','Equipo','Patente','Operador','Turno','Punto carguío','Lugar otros','Área/Sector','Agua cargada (L)','Supresor (kg)','Distancia total (km)','Distancia regando (km)','Tiempo regando (min)','Velocidad máx (km/h)','Estado'];
+   const vals=rows.map(r=>[r.fecha_operacion,r.circuito_id,r.equipo,r.patente,r.operador,r.turno,r.punto_carguio,r.punto_carguio_otro,r.area_sector,r.litros_cargados,r.supresor_kg,r.distancia_km,r.distancia_regando_km,r.tiempo_regando_min,r.velocidad_max_kmh,r.estado]);return [h,...vals]}
+ function exportCSV(){if(state.partial||!state.visible.length)return;const data='\uFEFF'+reporteMatriz().map(row=>row.map(csvSafe).join(';')).join('\r\n');downloadBlob('ICV_Riego_'+$('desde').value+'_'+$('hasta').value+'.csv','text/csv;charset=utf-8',data);}
+ // Generador XLSX nativo, sin librerías externas ni servidores, cuatro hojas de cálculo.
+ const xml=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+ const excelCol=n=>{let s='';do{s=String.fromCharCode(65+n%26)+s;n=Math.floor(n/26)-1;}while(n>=0);return s};
+ function worksheet(matrix){const rows=matrix.map((row,i)=>'<row r="'+(i+1)+'">'+row.map((val,j)=>{const ref=excelCol(j)+(i+1);
+   if(typeof val==='number'&&Number.isFinite(val))return '<c r="'+ref+'"><v>'+val+'</v></c>';
+   return '<c r="'+ref+'" t="inlineStr"><is><t xml:space="preserve">'+xml(val)+'</t></is></c>';
+ }).join('')+'</row>').join('');return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'+rows+'</sheetData></worksheet>';}
+ function zipStore(files){const encoder=new TextEncoder(),parts=[],central=[];let offset=0;
+   const u16=(n,view,i)=>view.setUint16(i,n,true),u32=(n,view,i)=>view.setUint32(i,n>>>0,true);
+   const crc=(bytes)=>{let c=-1;for(const b of bytes){c^=b;for(let j=0;j<8;j++)c=(c>>>1)^((c&1)?0xEDB88320:0);}return(c^-1)>>>0};
+   for(const item of files){const name=encoder.encode(item.name),data=encoder.encode(item.content),checksum=crc(data);
+     const local=new Uint8Array(30+name.length),v=new DataView(local.buffer);u32(0x04034b50,v,0);u16(20,v,4);u16(0,v,6);u16(0,v,8);u16(0,v,10);u16(0,v,12);u32(checksum,v,14);u32(data.length,v,18);u32(data.length,v,22);u16(name.length,v,26);u16(0,v,28);local.set(name,30);parts.push(local,data);
+     const cent=new Uint8Array(46+name.length),cv=new DataView(cent.buffer);u32(0x02014b50,cv,0);u16(20,cv,4);u16(20,cv,6);u16(0,cv,8);u16(0,cv,10);u16(0,cv,12);u16(0,cv,14);u32(checksum,cv,16);u32(data.length,cv,20);u32(data.length,cv,24);u16(name.length,cv,28);u16(0,cv,30);u16(0,cv,32);u16(0,cv,34);u16(0,cv,36);u32(0,cv,38);u32(offset,cv,42);cent.set(name,46);central.push(cent);offset+=local.length+data.length;
+   }
+   const cenLength=central.reduce((n,a)=>n+a.length,0),end=new Uint8Array(22),ev=new DataView(end.buffer);u32(0x06054b50,ev,0);u16(0,ev,4);u16(0,ev,6);u16(files.length,ev,8);u16(files.length,ev,10);u32(cenLength,ev,12);u32(offset,ev,16);u16(0,ev,20);
+   return new Blob([...parts,...central,end],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+ }
+ function xlsxFiles(){const sector=aggregates(state.visible,r=>r.area_sector),equip=aggregates(state.visible,r=>r.equipo),punto=aggregates(state.visible,r=>r.punto_carguio);
+   const resumen=rows=>[['Nombre','Circuitos','Agua cargada (L)','Supresor (kg)','Distancia regando (km)'],...rows.map(r=>[r.name,r.circuitos,r.agua,r.supresor,r.riego_km])];
+   const sheets=[['Circuitos',reporteMatriz()],['Por sector',resumen(sector)],['Por equipo',resumen(equip)],['Por carguio',resumen(punto)]];
+   const sheetXml=sheets.map(x=>worksheet(x[1]));
+   const types='<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+sheets.map((s,i)=>'<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('')+'</Types>';
+   const root='<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+   const workbook='<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+sheets.map((s,i)=>'<sheet name="'+xml(s[0])+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>').join('')+'</sheets></workbook>';
+   const rels='<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+sheets.map((s,i)=>'<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>').join('')+'</Relationships>';
+   return [{name:'[Content_Types].xml',content:types},{name:'_rels/.rels',content:root},{name:'xl/workbook.xml',content:workbook},{name:'xl/_rels/workbook.xml.rels',content:rels},...sheetXml.map((content,i)=>({name:'xl/worksheets/sheet'+(i+1)+'.xml',content}))];
+ }
+ function exportXLSX(){if(!state.visible.length||state.partial)return;const blob=zipStore(xlsxFiles()),url=URL.createObjectURL(blob),a=el('a');a.href=url;a.download='ICV_Riego_'+$('desde').value+'_'+$('hasta').value+'.xlsx';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
+ function pdf(){if(!state.visible.length||state.partial)return;window.print();}
+ function saveConfig(e){e.preventDefault();const url=$('syncUrl').value.trim().replace(/\/+$/,''),token=$('syncToken').value.trim();
+   if(!validUrl(url)||!/^[0-9a-fA-F]{64}$/.test(token)){error('Verifica URL /exec y token de escritura de 64 caracteres.');return;}
+   try{const recordar=$('recordarToken').checked;localStorage.setItem(cfgKey,JSON.stringify({url,recordar,permitirDemo:$('enviarDemo').checked}));
+     if(recordar){localStorage.setItem(tokenLocal,token);sessionStorage.removeItem(tokenSession);}else{sessionStorage.setItem(tokenSession,token);localStorage.removeItem(tokenLocal);}
+     status('Conexión de la tablet guardada. El operador sincronizará con la app abierta en primer plano.');error('');
+   }catch(_){error('No se pudo guardar en el navegador. Comprueba almacenamiento local.');}
+ }
+ function init(){initConfig();const hoy=new Date();$('hasta').value=isoDate(hoy);$('desde').value=isoDate(new Date(hoy.getTime()-6*86400000));
+   $('topDate').textContent=new Intl.DateTimeFormat('es-CL',{timeZone:'America/Santiago',dateStyle:'medium'}).format(hoy);
+   $('loginForm').addEventListener('submit',login);$('logoutBtn').addEventListener('click',logout);$('sourceCloud').addEventListener('click',()=>selectSource('cloud'));$('sourceLocal').addEventListener('click',()=>selectSource('local'));$('consultarBtn').addEventListener('click',()=>consultar());
+   for(const id of ['equipoFiltro','sectorFiltro','puntoFiltro','turnoFiltro'])$(id).addEventListener(id==='equipoFiltro'?'input':'change',render);
+   $('incluirDemo').addEventListener('change',()=>{if(state.source==='local')render();else status('Para incluir DEMO de Sheets pulsa Consultar datos.');});
+   $('exportCsv').addEventListener('click',exportCSV);$('exportCsvQuick').addEventListener('click',exportCSV);$('exportXlsx').addEventListener('click',exportXLSX);$('exportPdf').addEventListener('click',pdf);$('clearRoute').addEventListener('click',clearMap);$('configForm').addEventListener('submit',saveConfig);
+   window.addEventListener('icv-leaflet-ready',()=>{if(state.selected)drawRoute(state.selected.r,state.selected.points)});
+   document.querySelectorAll('.navlink[href^="#"]').forEach(a=>a.addEventListener('click',()=>{document.querySelectorAll('.navlink').forEach(x=>x.classList.remove('active'));a.classList.add('active');}));
    render();
-  }catch(e){state.filas=[];render();error(e.message);status('No fue posible completar la consulta.');}
-  finally{$('consultar').disabled=false;}
- };
- const csv=(name,headers,rows)=>{
-  const sanitize=v=>{let s=String(v??'');if(/^[\s]*[=+@\-\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};
-  const data='\uFEFF'+[headers,...rows].map(r=>r.map(sanitize).join(';')).join('\r\n');
-  const u=URL.createObjectURL(new Blob([data],{type:'text/csv;charset=utf-8'})),a=el('a');a.href=u;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),30000);
- };
- const exportSummary=()=>{
-  const h=['circuito_id','fecha_operacion','equipo','patente','operador','turno','litros_cargados','distancia_km','velocidad_max_kmh','muestras_exceso','estado'];
-  csv('ICV_Supervision_'+dateZone(new Date())+'.csv',h,state.visibles.map(x=>h.map(k=>x[k]??'')));
- };
- const routeSvg=(points,limit)=>{
-  const box=$('routeSvg');box.replaceChildren();
-  const ns='http://www.w3.org/2000/svg';const svg=document.createElementNS(ns,'svg');svg.setAttribute('viewBox','0 0 1000 600');box.append(svg);
-  if(!points.length){const label=document.createElementNS(ns,'text');label.textContent='Sin coordenadas disponibles';label.setAttribute('x','320');label.setAttribute('y','300');svg.append(label);return;}
-  const lats=points.map(p=>n(p.lat)),lons=points.map(p=>n(p.lon)),midLat=(Math.min(...lats)+Math.max(...lats))/2;
-  const conv=Math.max(.15,Math.cos(midLat*Math.PI/180));const xs=lons.map(x=>x*conv),ys=lats;
-  const cx=(Math.max(...xs)+Math.min(...xs))/2,cy=(Math.max(...ys)+Math.min(...ys))/2;
-  const scale=Math.max((Math.max(...xs)-Math.min(...xs))*1.3,(Math.max(...ys)-Math.min(...ys))*1.3,.00005);
-  const xx=v=>500+(v*conv-cx)/scale*780,yy=v=>300-(v-cy)/scale*460;
-  const add=(tag,attrs)=>{const node=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))node.setAttribute(k,String(v));svg.append(node);return node;};
-  for(let i=1;i<points.length;i++){
-   const a=points[i-1],b=points[i];add('line',{x1:xx(a.lon),y1:yy(a.lat),x2:xx(b.lon),y2:yy(b.lat),stroke:n(b.velocidad_kmh)>limit?'#D32F2F':'#15804A','stroke-width':8,'stroke-linecap':'round'});
-  }
-  const first=points[0],last=points.at(-1);add('circle',{cx:xx(first.lon),cy:yy(first.lat),r:11,fill:'#15804A',stroke:'#FFF','stroke-width':3});
-  add('circle',{cx:xx(last.lon),cy:yy(last.lat),r:13,fill:'#FFF',stroke:'#212121','stroke-width':4});
- };
- const drawRoute=(r,points)=>{
-  state.route={r,points};const canMap=!!window.L&&navigator.onLine;
-  $('routeSvg').hidden=canMap;$('routeMap').hidden=!canMap;
-  if(!canMap){routeSvg(points,n(r.limite_velocidad_kmh));return;}
-  try{
-   if(!state.map){state.map=L.map('routeMap',{preferCanvas:true});}
-   if(!state.mapTile){state.mapTile=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {maxZoom:19,attribution:'&copy; OpenStreetMap colaboradores'}).addTo(state.map);}
-   for(const lyr of state.mapLayers)state.map.removeLayer(lyr);state.mapLayers=[];
-   for(let i=1;i<points.length;i++){
-    const a=points[i-1],b=points[i];const obj=L.polyline([[a.lat,a.lon],[b.lat,b.lon]],
-     {color:n(b.velocidad_kmh)>n(r.limite_velocidad_kmh)?'#D32F2F':'#15804A',weight:5,opacity:.92}).addTo(state.map);state.mapLayers.push(obj);
-   }
-   if(points.length){const a=points[0],b=points.at(-1);state.mapLayers.push(L.circleMarker([a.lat,a.lon],{radius:6,color:'#15804A',fillOpacity:1}).addTo(state.map));
-    state.mapLayers.push(L.circleMarker([b.lat,b.lon],{radius:7,color:'#212121',fillColor:'#fff',fillOpacity:1}).addTo(state.map));
-    if(points.length===1)state.map.setView([a.lat,a.lon],16);else state.map.fitBounds(L.latLngBounds(points.map(x=>[x.lat,x.lon])).pad(.2));}
-   setTimeout(()=>state.map.invalidateSize(),100);
-  }catch(e){console.warn('Mapa no disponible:',e);$('routeMap').hidden=true;$('routeSvg').hidden=false;routeSvg(points,n(r.limite_velocidad_kmh));}
- };
- const openRoute=async(r)=>{
-  $('routeCard').hidden=false;$('routeTitle').textContent=r.equipo+' · '+r.patente;
-  $('routeMeta').textContent=r.fecha_operacion+' · '+r.operador+' · '+fmt(r.distancia_km,2)+' km';
-  $('routeStatus').textContent='Cargando coordenadas...';$('routeCard').scrollIntoView({behavior:'smooth'});
-  try{
-   let points=[];
-   if(state.fuente==='local'){points=r._route||[];}
-   else{
-    if(!state.secret)throw new Error('Es necesario volver a ingresar SUPERVISOR_TOKEN y consultar.');
-    const ts=Date.now(),sig=await hmac('ruta|'+r.circuito_id+'|'+ts,state.secret);
-    const res=await jsonp(state.cloudUrl,{accion:'ruta',circuito_id:r.circuito_id,ts,sig});
-    if(!res||!res.ok)throw new Error(res?.mensaje||res?.codigo||'No fue posible recibir la ruta.');
-    points=Array.isArray(res.puntos)?res.puntos:[];
-   }
-   drawRoute(r,points);$('routeStatus').textContent=points.length+' posiciones GPS · límite '+fmt(r.limite_velocidad_kmh)+' km/h · '+(state.fuente==='cloud'?'recibido de Google Sheets':'almacenamiento local');
-  }catch(e){$('routeStatus').textContent='No se pudo dibujar: '+e.message;}
- };
- const closeRoute=()=>{$('routeCard').hidden=true};
- const init=()=>{
-  const d=new Date();$('fechaHasta').value=dateZone(d);$('fechaDesde').value=dateZone(new Date(d.getTime()-6*86400000));
-  try{const c=JSON.parse(localStorage.getItem('icv_riego_v1_sync_config')||'{}');if(c.url)$('apiUrl').value=c.url;}catch(_){}
-  $('localTab').addEventListener('click',()=>{showCloud(false);request()});
-  $('cloudTab').addEventListener('click',()=>{showCloud(true);status('Ingresa SUPERVISOR_TOKEN. El token de registro NO sirve.');});
-  $('consultar').addEventListener('click',request);
-  $('filterEquipo').addEventListener('input',render);$('filterTurno').addEventListener('change',render);
-  $('fechaDesde').addEventListener('change',()=>{if(state.fuente==='local')render()});
-  $('fechaHasta').addEventListener('change',()=>{if(state.fuente==='local')render()});
-  $('includeDemo').addEventListener('change',()=>{if(state.fuente==='local')render();else status('Pulsa Consultar circuitos para aplicar el cambio DEMO en Sheets.')});
-  $('exportar').addEventListener('click',exportSummary);
-  $('closeRoute').addEventListener('click',closeRoute);
-  window.addEventListener('icv-leaflet-ready',()=>{if(state.route&&!$('routeCard').hidden)drawRoute(state.route.r,state.route.points)});
-  request();
- };
+ }
  init();
- window.ICV_PANEL_DIAG=Object.freeze({version:'0.4.0',getState:()=>({fuente:state.fuente,circuitos:state.filas.length,visibles:state.visibles.length,route:!!state.route})});
+ window.ICV_SUPERVISOR_DIAG=Object.freeze({version:'0.5.0',getState:()=>({autorizado:!!state.sid,fuente:state.source,filas:state.rows.length,visibles:state.visible.length,parcial:state.partial})});
 })();
 </script>
-</body>
-</html>
+</body></html>
