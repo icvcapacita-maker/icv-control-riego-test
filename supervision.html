@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="es-CL">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#D32F2F">
+  <meta name="description" content="Panel piloto de supervisión de circuitos de riego y recorridos GPS ICV.">
+  <title>ICV · Panel de supervisión GPS</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
+  <script async src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous" onload="window.dispatchEvent(new Event('icv-leaflet-ready'))"></script>
+  <style>
+    :root{--red:#D32F2F;--black:#212121;--bg:#F5F6F8;--txt:#263341;--muted:#687587;--stroke:#DFE4EA;--green:#15804A}
+    *{box-sizing:border-box}html,body{min-height:100%;margin:0}body{background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,'Segoe UI',Arial,sans-serif}
+    a{color:inherit}button,input,select{font:inherit}button{cursor:pointer}[hidden]{display:none!important}
+    button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #D32F2F88;outline-offset:2px}
+    .layout{max-width:1140px;margin:auto;padding-bottom:45px}.top{background:var(--black);color:#fff;border-bottom:5px solid var(--red);padding:19px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .mark{background:var(--red);border-radius:12px;display:grid;place-items:center;width:47px;height:47px;font-weight:900;letter-spacing:-1px}.mast{flex:1;min-width:200px}
+    h1,h2,h3,p{margin:0}h1{font-size:21px;letter-spacing:-.5px}h2{font-size:19px;letter-spacing:-.3px}h3{font-size:14px}.eyebrow{font-weight:850;letter-spacing:1.25px;font-size:10px;color:var(--red);text-transform:uppercase;margin-bottom:5px}
+    .top .eyebrow{color:#D9DEE5}.back{border:1px solid #777;border-radius:10px;color:white;padding:9px 13px;text-decoration:none;font-size:12px;font-weight:800;white-space:nowrap}
+    main{padding:18px;display:grid;gap:16px}.card{background:#fff;border:1px solid var(--stroke);border-radius:16px;box-shadow:0 4px 17px #20314508;padding:18px;min-width:0}
+    .between{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.muted{color:var(--muted);font-size:12px;line-height:1.6;margin-top:5px}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap}.tab{border:1px solid var(--stroke);background:#fff;border-radius:10px;min-height:44px;padding:10px 17px;font-weight:750;font-size:13px;color:#536172}.tab[aria-selected="true"]{background:#212121;color:white;border-color:#212121}
+    .filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:15px}.field label{display:block;font-size:12px;font-weight:800;margin-bottom:6px}.field input,.field select{min-width:0;width:100%;height:44px;border:1px solid #CFD6DD;border-radius:10px;padding:10px 12px;background:#fff;color:var(--txt);font-size:13px}
+    .field.wide{grid-column:span 2}.check{display:flex;align-items:center;gap:8px;font-size:12px;color:#546070}.check input{accent-color:var(--red);width:17px;height:17px}
+    .button{border:0;padding:11px 17px;border-radius:10px;min-height:45px;font-weight:850;font-size:13px}.primary{background:var(--red);color:white}.dark{background:var(--black);color:#fff}.light{background:#F5F6F8;border:1px solid #DDE1E5;color:#283444}.button:disabled{opacity:.45;cursor:not-allowed}
+    .notice{background:#FFF4E7;border:1px solid #FFDAB4;color:#80500A;border-radius:10px;padding:11px 13px;font-size:12px;line-height:1.6}
+    .stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.stat{background:#F7F8FA;border:1px solid #ECEFF2;padding:13px;border-radius:11px}.stat span{display:block;font-size:11px;color:#677581;font-weight:700}.stat strong{display:block;font-size:24px;letter-spacing:-.6px;margin-top:4px;font-variant-numeric:tabular-nums}
+    .chart{display:grid;gap:9px;margin-top:13px}.bar-row{display:grid;grid-template-columns:minmax(72px,1fr) 3fr 50px;gap:9px;align-items:center;font-size:11px;color:#586675}.bar-bg{height:9px;border-radius:99px;background:#F0F1F4;overflow:hidden}.bar-fill{height:100%;background:#D32F2F;border-radius:99px}
+    .scroll{overflow:auto;margin-top:12px;border:1px solid var(--stroke);border-radius:12px;max-height:420px}table{width:100%;border-collapse:collapse;min-width:800px;font-size:12px}thead{position:sticky;top:0;background:#F3F5F7}th,td{text-align:left;padding:11px 12px;border-bottom:1px solid #EBEFF1;white-space:nowrap}th{font-size:11px;font-weight:850;color:#4C5C6D}tbody tr:last-child td{border:0}
+    .tag{display:inline-flex;background:#FFF1D9;color:#8B5B02;border-radius:6px;padding:4px 7px;font-size:10px;font-weight:850}.tag.ok{color:#147B42;background:#E4F4EA}.tag.demo{color:#6A55A4;background:#EEE9F8}
+    .link-btn{background:none;border:0;text-decoration:underline;font-size:12px;color:#AF2525;font-weight:850;padding:5px 2px;cursor:pointer}
+    .map-box{height:320px;border:1px solid var(--stroke);border-radius:12px;overflow:hidden;background:#EFF2F5}.map{height:100%;width:100%}.map svg{height:100%;width:100%}
+    .legend{display:flex;gap:15px;font-size:12px;color:#637180;margin:12px 0;flex-wrap:wrap}.swatch{width:16px;height:4px;background:var(--green);display:inline-block;vertical-align:middle;margin-right:5px;border-radius:4px}.swatch.red{background:var(--red)}
+    .loading{font-size:12px;color:#53616F;padding:13px 0}.error{color:#9A2626;background:#FFF0F0;border:1px solid #FFD4D4;border-radius:10px;padding:10px 13px;font-size:12px;line-height:1.5}
+    .footer{text-align:center;padding:10px;color:#8993A1;font-size:11px;line-height:1.5}
+    @media(min-width:760px){main{padding:22px}.filters{grid-template-columns:repeat(4,minmax(0,1fr))}.field.wide{grid-column:span 2}.stat-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.map-box{height:400px}}
+  </style>
+</head>
+<body>
+<div class="layout">
+<header class="top"><div class="mark">ICV</div><div class="mast"><div class="eyebrow">Salares Norte · Operaciones Mina</div><h1>Panel de supervisión GPS</h1></div><a class="back" href="./index.html">← Operador</a></header>
+<main>
+  <div class="notice">Versión piloto para pruebas. El panel local muestra solo circuitos de este dispositivo. La consulta central exige una credencial de supervisión independiente del token de registro. No reemplaza una plataforma corporativa con control de acceso.</div>
+  <section class="card">
+    <div class="between"><div><p class="eyebrow">Origen de datos</p><h2>Consolidados y recorridos</h2><p class="muted">Selecciona la fuente: registros locales u operaciones recibidas por Google Sheets.</p></div><div class="tabs" role="tablist" aria-label="Fuente de datos"><button id="localTab" class="tab" aria-selected="true" type="button">En este teléfono</button><button id="cloudTab" class="tab" aria-selected="false" type="button">Google Sheets</button></div></div>
+    <div id="cloudCredentials" hidden>
+      <div class="filters">
+        <div class="field wide"><label for="apiUrl">URL del backend Apps Script (/exec)</label><input type="url" id="apiUrl" spellcheck="false" autocomplete="off" placeholder="https://script.google.com/macros/s/.../exec"></div>
+        <div class="field wide"><label for="superToken">SUPERVISOR_TOKEN (distinto de INGEST_TOKEN)</label><input type="password" id="superToken" autocomplete="off" spellcheck="false" placeholder="Credencial del supervisor"></div>
+      </div>
+      <p class="muted">La credencial solo permanece en memoria mientras está abierta esta página. No la publiques en GitHub ni la ingreses en un dispositivo compartido.</p>
+    </div>
+    <div class="filters">
+      <div class="field"><label for="fechaDesde">Desde</label><input id="fechaDesde" type="date"></div>
+      <div class="field"><label for="fechaHasta">Hasta</label><input id="fechaHasta" type="date"></div>
+      <div class="field"><label for="filterEquipo">Equipo o patente</label><input id="filterEquipo" type="search" placeholder="Filtrar equipos"></div>
+      <div class="field"><label for="filterTurno">Turno</label><select id="filterTurno"><option value="">Todos</option><option value="DIA">Día</option><option value="NOCHE">Noche</option></select></div>
+      <div class="field wide"><label class="check" for="includeDemo"><input id="includeDemo" type="checkbox"> Incluir circuitos DEMO</label></div>
+      <div class="field wide"><button id="consultar" class="button primary" type="button">↻ Consultar circuitos</button> <button id="exportar" class="button light" type="button" disabled>↓ CSV resumen</button></div>
+    </div>
+    <p class="muted" id="panelState" role="status" aria-live="polite">Selecciona filtros para consultar.</p>
+    <div id="panelError" class="error" hidden></div>
+  </section>
+  <section class="card">
+    <div class="between"><div><p class="eyebrow">Indicadores</p><h2>Balance de circuitos</h2></div><span id="sourceBadge" class="tag">LOCAL</span></div>
+    <div class="stat-grid" style="margin-top:14px">
+      <div class="stat"><span>Circuitos</span><strong id="kpiCircuitos">0</strong></div>
+      <div class="stat"><span>Agua cargada</span><strong id="kpiLitros">0 L</strong></div>
+      <div class="stat"><span>Distancia</span><strong id="kpiKm">0 km</strong></div>
+      <div class="stat"><span>Máx. registrada</span><strong id="kpiVel">0 km/h</strong></div>
+      <div class="stat"><span>Muestras exceso</span><strong id="kpiExceso">0</strong></div>
+    </div>
+    <div id="chart" class="chart" aria-label="Distribución de agua cargada por equipo"></div>
+  </section>
+  <section class="card">
+    <div class="between"><div><p class="eyebrow">Detalle de registros</p><h2>Listado de circuitos</h2></div><span id="tableCount" class="tag">0 registros</span></div>
+    <div class="scroll"><table><thead><tr><th>Fecha</th><th>Equipo</th><th>Operador</th><th>Turno</th><th>Agua (L)</th><th>Km</th><th>Vel. máx.</th><th>Excesos</th><th>Estado</th><th>Mapa</th></tr></thead><tbody id="tbody"></tbody></table></div>
+    <p class="muted">Los resultados del panel central se limitan a 31 días por consulta y a 250 circuitos de los últimos 5.000 registros examinados. Cuando se indique un recorte, reduce el rango.</p>
+  </section>
+  <section class="card" id="routeCard" hidden>
+    <div class="between"><div><p class="eyebrow">Reconstrucción de ruta</p><h2 id="routeTitle">Recorrido</h2><p class="muted" id="routeMeta"></p></div><button id="closeRoute" type="button" class="button light">Cerrar</button></div>
+    <div class="map-box" style="margin-top:12px"><div id="routeMap" class="map"></div><div id="routeSvg" class="map" hidden></div></div>
+    <div class="legend"><span><i class="swatch"></i>Velocidad normal</span><span><i class="swatch red"></i>Sobre el límite</span><span>La línea no sustituye un sistema GPS homologado</span></div>
+    <p class="muted" id="routeStatus"></p>
+  </section>
+</main>
+<footer class="footer">ICV · Control de Riego & Telemetría GPS · Supervisión v0.4.0 · Uso piloto, acceso restringido mediante credencial de prueba.</footer>
+</div>
+<script>
+'use strict';
+(() => {
+ const $=id=>document.getElementById(id);
+ const state={fuente:'local',filas:[],visibles:[],cloudUrl:'',secret:'',map:null,mapTile:null,mapLayers:[],route:null};
+ const dateZone=(d)=>{const p=new Intl.DateTimeFormat('en-US',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);const a=k=>p.find(x=>x.type===k).value;return `${a('year')}-${a('month')}-${a('day')}`};
+ const n=(v)=>Number.isFinite(Number(v))?Number(v):0;
+ const fmt=(v,d=0)=>new Intl.NumberFormat('es-CL',{maximumFractionDigits:d,minimumFractionDigits:d}).format(n(v));
+ const el=(tag,cls,text)=>{const x=document.createElement(tag);if(cls)x.className=cls;if(text!==undefined)x.textContent=String(text);return x};
+ const error=(msg)=>{$('panelError').hidden=!msg;$('panelError').textContent=msg||''};
+ const status=(msg)=>{$('panelState').textContent=msg};
+ const showCloud=(yes)=>{
+  state.fuente=yes?'cloud':'local';$('cloudCredentials').hidden=!yes;
+  $('cloudTab').setAttribute('aria-selected',String(yes));$('localTab').setAttribute('aria-selected',String(!yes));
+  $('sourceBadge').textContent=yes?'GOOGLE SHEETS':'LOCAL';
+  state.filas=[];state.visibles=[];render();error('');
+  status(yes?'Ingresa tu SUPERVISOR_TOKEN y consulta los circuitos.':'Circuitos guardados en este dispositivo.');
+ };
+ const isDemo=(r)=>r.modo==='DEMO'||String(r.circuito_id||'').startsWith('TEST_');
+ const localRows=()=>{
+  let data=[];
+  try{data=JSON.parse(localStorage.getItem('icv_riego_v1_circuitos_pendientes')||'[]')}catch(_){}
+  if(!Array.isArray(data))return [];
+  return data.filter(c=>c&&c.resumen).map(c=>{
+    const r=c.resumen, p=Array.isArray(c.puntos)?c.puntos:[];
+    return {circuito_id:r.circuito_id,fecha_operacion:r.fecha_operacion,equipo:r.equipo,patente:r.patente,operador:r.operador,turno:r.turno,
+      litros_cargados:n(r.litros_cargados),distancia_km:n(c.totalMetros)/1000,velocidad_max_kmh:n(c.velocidad_max_kmh),
+      muestras_exceso:n(c.muestras_exceso),puntos_recibidos:p.length,limite_velocidad_kmh:n(r.limite_velocidad_kmh),
+      estado:c.estado_local==='SINCRONIZADO'?'COMPLETO':'PENDIENTE',modo:c.modo||'',_route:p};
+  });
+ };
+ const urlValid=(url)=>/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url);
+ const hex=(bytes)=>Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
+ const hmac=async(text,key)=>{
+  if(!crypto||!crypto.subtle)throw new Error('La consulta requiere HTTPS y Web Crypto.');
+  const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(key),{name:'HMAC',hash:'SHA-256'},false,['sign']);
+  return hex(new Uint8Array(await crypto.subtle.sign('HMAC',k,new TextEncoder().encode(text))));
+ };
+ const jsonp=(url,params)=>new Promise((resolve,reject)=>{
+  const cb='icvAck_'+hex(crypto.getRandomValues(new Uint8Array(10)));
+  let done=false;const script=document.createElement('script');
+  const cleanup=()=>{clearTimeout(timer);script.remove();try{delete window[cb]}catch(_){window[cb]=undefined}};
+  const finish=(e,v)=>{if(done)return;done=true;cleanup();e?reject(e):resolve(v)};
+  const timer=setTimeout(()=>finish(new Error('El backend no respondió dentro de 35 segundos.')),35000);
+  window[cb]=response=>finish(null,response);
+  script.async=true;script.onerror=()=>finish(new Error('No se pudo conectar con Apps Script. Revisa /exec y la nueva implementación.'));
+  const u=new URL(url);for(const [k,v] of Object.entries({...params,prefix:cb}))u.searchParams.set(k,String(v));
+  script.src=u.toString();document.head.append(script);
+ });
+ const cloudRows=async()=>{
+  const url=$('apiUrl').value.trim().replace(/\/+$/,'');const key=$('superToken').value.trim();
+  if(!urlValid(url))throw new Error('Ingresa la URL original de Apps Script que finaliza en /exec.');
+  if(!/^[a-fA-F0-9]{64}$/.test(key))throw new Error('SUPERVISOR_TOKEN debe tener 64 caracteres hexadecimales. No uses INGEST_TOKEN.');
+  const desde=$('fechaDesde').value,hasta=$('fechaHasta').value, demo=$('includeDemo').checked?'1':'0';
+  if(!desde||!hasta||desde>hasta)throw new Error('El rango de fechas es incorrecto.');
+  const dias=(Date.parse(hasta+'T00:00:00Z')-Date.parse(desde+'T00:00:00Z'))/86400000;
+  if(dias>=31)throw new Error('Selecciona un máximo de 31 días inclusivos por consulta.');
+  state.cloudUrl=url;state.secret=key;
+  const ts=Date.now(),sig=await hmac('panel|'+desde+'|'+hasta+'|'+demo+'|'+ts,key);
+  const res=await jsonp(url,{accion:'panel',desde,hasta,demo,ts,sig});
+  if(!res||!res.ok)throw new Error(res?.mensaje||res?.codigo||'Respuesta inválida del backend.');
+  status('Datos confirmados desde Google Sheets · '+res.circuitos.length+' circuitos devueltos'+(res.recorte?' · RESULTADO RECORTADO, reduce el rango de fechas':'')+'.');
+  return Array.isArray(res.circuitos)?res.circuitos:[];
+ };
+ const filterRows=(rows)=>{
+  const search=$('filterEquipo').value.trim().toLocaleLowerCase('es'), turno=$('filterTurno').value,desde=$('fechaDesde').value,hasta=$('fechaHasta').value;
+  return rows.filter(r=>{
+   const dia=String(r.fecha_operacion||'');if(dia<desde||dia>hasta)return false;
+   if(!$('includeDemo').checked&&isDemo(r))return false;
+   if(turno&&r.turno!==turno)return false;
+   if(search&&!String(r.equipo+' '+r.patente).toLocaleLowerCase('es').includes(search))return false;
+   return true;
+  });
+ };
+ const render=()=>{
+  state.visibles=filterRows(state.filas);
+  const rows=state.visibles;
+  $('kpiCircuitos').textContent=fmt(rows.length);
+  $('kpiLitros').textContent=fmt(rows.reduce((a,x)=>a+n(x.litros_cargados),0))+' L';
+  $('kpiKm').textContent=fmt(rows.reduce((a,x)=>a+n(x.distancia_km),0),2)+' km';
+  $('kpiVel').textContent=fmt(Math.max(0,...rows.map(x=>n(x.velocidad_max_kmh))))+' km/h';
+  $('kpiExceso').textContent=fmt(rows.reduce((a,x)=>a+n(x.muestras_exceso),0));
+  $('tableCount').textContent=rows.length+' registros';$('exportar').disabled=!rows.length;
+  const tbody=$('tbody');tbody.replaceChildren();
+  for(const r of rows){
+   const tr=el('tr');
+   for(const v of [r.fecha_operacion,r.equipo+' · '+r.patente,r.operador,r.turno,fmt(r.litros_cargados),fmt(r.distancia_km,2),fmt(r.velocidad_max_kmh)+' km/h',fmt(r.muestras_exceso)])tr.append(el('td','',v));
+   const st=el('td');st.append(el('span','tag '+(r.estado==='COMPLETO'?'ok':''),r.estado));tr.append(st);
+   const td=el('td'),b=el('button','link-btn','Ver ruta');b.type='button';b.addEventListener('click',()=>openRoute(r));td.append(b);tr.append(td);tbody.append(tr);
+  }
+  if(!rows.length){const tr=el('tr');const td=el('td','','No hay circuitos para estos filtros.');td.colSpan=10;tr.append(td);tbody.append(tr);}
+  const byEquip=new Map();for(const r of rows){const k=String(r.equipo||'Sin equipo');byEquip.set(k,(byEquip.get(k)||0)+n(r.litros_cargados));}
+  const max=Math.max(1,...byEquip.values());const chart=$('chart');chart.replaceChildren();
+  for(const [name,val] of [...byEquip].sort((a,b)=>b[1]-a[1]).slice(0,8)){
+   const row=el('div','bar-row'),lab=el('span','',name),bar=el('div','bar-bg'),fill=el('div','bar-fill'),amt=el('b','',fmt(val)+' L');
+   fill.style.width=(val/max*100).toFixed(1)+'%';bar.append(fill);row.append(lab,bar,amt);chart.append(row);
+  }
+ };
+ const request=async()=>{
+  if(state.fuente==='cloud'&&!navigator.onLine){error('Sin conexión: el panel central requiere internet. Puedes consultar la fuente local.');return;}
+  $('consultar').disabled=true;error('');status('Consultando registros...');
+  try{
+   state.filas=state.fuente==='cloud'?await cloudRows():localRows();
+   if(state.fuente==='local')status(state.filas.length+' circuitos recuperados del almacenamiento de este dispositivo.');
+   render();
+  }catch(e){state.filas=[];render();error(e.message);status('No fue posible completar la consulta.');}
+  finally{$('consultar').disabled=false;}
+ };
+ const csv=(name,headers,rows)=>{
+  const sanitize=v=>{let s=String(v??'');if(/^[\s]*[=+@\-\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};
+  const data='\uFEFF'+[headers,...rows].map(r=>r.map(sanitize).join(';')).join('\r\n');
+  const u=URL.createObjectURL(new Blob([data],{type:'text/csv;charset=utf-8'})),a=el('a');a.href=u;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),30000);
+ };
+ const exportSummary=()=>{
+  const h=['circuito_id','fecha_operacion','equipo','patente','operador','turno','litros_cargados','distancia_km','velocidad_max_kmh','muestras_exceso','estado'];
+  csv('ICV_Supervision_'+dateZone(new Date())+'.csv',h,state.visibles.map(x=>h.map(k=>x[k]??'')));
+ };
+ const routeSvg=(points,limit)=>{
+  const box=$('routeSvg');box.replaceChildren();
+  const ns='http://www.w3.org/2000/svg';const svg=document.createElementNS(ns,'svg');svg.setAttribute('viewBox','0 0 1000 600');box.append(svg);
+  if(!points.length){const label=document.createElementNS(ns,'text');label.textContent='Sin coordenadas disponibles';label.setAttribute('x','320');label.setAttribute('y','300');svg.append(label);return;}
+  const lats=points.map(p=>n(p.lat)),lons=points.map(p=>n(p.lon)),midLat=(Math.min(...lats)+Math.max(...lats))/2;
+  const conv=Math.max(.15,Math.cos(midLat*Math.PI/180));const xs=lons.map(x=>x*conv),ys=lats;
+  const cx=(Math.max(...xs)+Math.min(...xs))/2,cy=(Math.max(...ys)+Math.min(...ys))/2;
+  const scale=Math.max((Math.max(...xs)-Math.min(...xs))*1.3,(Math.max(...ys)-Math.min(...ys))*1.3,.00005);
+  const xx=v=>500+(v*conv-cx)/scale*780,yy=v=>300-(v-cy)/scale*460;
+  const add=(tag,attrs)=>{const node=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))node.setAttribute(k,String(v));svg.append(node);return node;};
+  for(let i=1;i<points.length;i++){
+   const a=points[i-1],b=points[i];add('line',{x1:xx(a.lon),y1:yy(a.lat),x2:xx(b.lon),y2:yy(b.lat),stroke:n(b.velocidad_kmh)>limit?'#D32F2F':'#15804A','stroke-width':8,'stroke-linecap':'round'});
+  }
+  const first=points[0],last=points.at(-1);add('circle',{cx:xx(first.lon),cy:yy(first.lat),r:11,fill:'#15804A',stroke:'#FFF','stroke-width':3});
+  add('circle',{cx:xx(last.lon),cy:yy(last.lat),r:13,fill:'#FFF',stroke:'#212121','stroke-width':4});
+ };
+ const drawRoute=(r,points)=>{
+  state.route={r,points};const canMap=!!window.L&&navigator.onLine;
+  $('routeSvg').hidden=canMap;$('routeMap').hidden=!canMap;
+  if(!canMap){routeSvg(points,n(r.limite_velocidad_kmh));return;}
+  try{
+   if(!state.map){state.map=L.map('routeMap',{preferCanvas:true});}
+   if(!state.mapTile){state.mapTile=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {maxZoom:19,attribution:'&copy; OpenStreetMap colaboradores'}).addTo(state.map);}
+   for(const lyr of state.mapLayers)state.map.removeLayer(lyr);state.mapLayers=[];
+   for(let i=1;i<points.length;i++){
+    const a=points[i-1],b=points[i];const obj=L.polyline([[a.lat,a.lon],[b.lat,b.lon]],
+     {color:n(b.velocidad_kmh)>n(r.limite_velocidad_kmh)?'#D32F2F':'#15804A',weight:5,opacity:.92}).addTo(state.map);state.mapLayers.push(obj);
+   }
+   if(points.length){const a=points[0],b=points.at(-1);state.mapLayers.push(L.circleMarker([a.lat,a.lon],{radius:6,color:'#15804A',fillOpacity:1}).addTo(state.map));
+    state.mapLayers.push(L.circleMarker([b.lat,b.lon],{radius:7,color:'#212121',fillColor:'#fff',fillOpacity:1}).addTo(state.map));
+    if(points.length===1)state.map.setView([a.lat,a.lon],16);else state.map.fitBounds(L.latLngBounds(points.map(x=>[x.lat,x.lon])).pad(.2));}
+   setTimeout(()=>state.map.invalidateSize(),100);
+  }catch(e){console.warn('Mapa no disponible:',e);$('routeMap').hidden=true;$('routeSvg').hidden=false;routeSvg(points,n(r.limite_velocidad_kmh));}
+ };
+ const openRoute=async(r)=>{
+  $('routeCard').hidden=false;$('routeTitle').textContent=r.equipo+' · '+r.patente;
+  $('routeMeta').textContent=r.fecha_operacion+' · '+r.operador+' · '+fmt(r.distancia_km,2)+' km';
+  $('routeStatus').textContent='Cargando coordenadas...';$('routeCard').scrollIntoView({behavior:'smooth'});
+  try{
+   let points=[];
+   if(state.fuente==='local'){points=r._route||[];}
+   else{
+    if(!state.secret)throw new Error('Es necesario volver a ingresar SUPERVISOR_TOKEN y consultar.');
+    const ts=Date.now(),sig=await hmac('ruta|'+r.circuito_id+'|'+ts,state.secret);
+    const res=await jsonp(state.cloudUrl,{accion:'ruta',circuito_id:r.circuito_id,ts,sig});
+    if(!res||!res.ok)throw new Error(res?.mensaje||res?.codigo||'No fue posible recibir la ruta.');
+    points=Array.isArray(res.puntos)?res.puntos:[];
+   }
+   drawRoute(r,points);$('routeStatus').textContent=points.length+' posiciones GPS · límite '+fmt(r.limite_velocidad_kmh)+' km/h · '+(state.fuente==='cloud'?'recibido de Google Sheets':'almacenamiento local');
+  }catch(e){$('routeStatus').textContent='No se pudo dibujar: '+e.message;}
+ };
+ const closeRoute=()=>{$('routeCard').hidden=true};
+ const init=()=>{
+  const d=new Date();$('fechaHasta').value=dateZone(d);$('fechaDesde').value=dateZone(new Date(d.getTime()-6*86400000));
+  try{const c=JSON.parse(localStorage.getItem('icv_riego_v1_sync_config')||'{}');if(c.url)$('apiUrl').value=c.url;}catch(_){}
+  $('localTab').addEventListener('click',()=>{showCloud(false);request()});
+  $('cloudTab').addEventListener('click',()=>{showCloud(true);status('Ingresa SUPERVISOR_TOKEN. El token de registro NO sirve.');});
+  $('consultar').addEventListener('click',request);
+  $('filterEquipo').addEventListener('input',render);$('filterTurno').addEventListener('change',render);
+  $('fechaDesde').addEventListener('change',()=>{if(state.fuente==='local')render()});
+  $('fechaHasta').addEventListener('change',()=>{if(state.fuente==='local')render()});
+  $('includeDemo').addEventListener('change',()=>{if(state.fuente==='local')render();else status('Pulsa Consultar circuitos para aplicar el cambio DEMO en Sheets.')});
+  $('exportar').addEventListener('click',exportSummary);
+  $('closeRoute').addEventListener('click',closeRoute);
+  window.addEventListener('icv-leaflet-ready',()=>{if(state.route&&!$('routeCard').hidden)drawRoute(state.route.r,state.route.points)});
+  request();
+ };
+ init();
+ window.ICV_PANEL_DIAG=Object.freeze({version:'0.4.0',getState:()=>({fuente:state.fuente,circuitos:state.filas.length,visibles:state.visibles.length,route:!!state.route})});
+})();
+</script>
+</body>
+</html>

@@ -7,6 +7,11 @@
   <meta name="color-scheme" content="light">
   <meta name="description" content="Registro, historial y sincronización verificable de recorridos GPS para camiones aljibe.">
   <title>ICV | Control de Riego y Telemetría GPS</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ICV Riego GPS">
   <!-- ETAPA 3: token ingresado en el dispositivo, nunca incrustado en el repositorio. -->
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
@@ -76,6 +81,12 @@
     .muted-panel{background:#F7F8FA;border:1px solid #E6EAED;padding:11px;border-radius:10px;color:#596372;font-size:12px;line-height:1.5}
     .mono{font-family:ui-monospace,Consolas,monospace;font-size:11px;overflow-wrap:anywhere}
     @media(min-width:600px){.sync-controls{grid-template-columns:1fr 1fr}.sync-controls .wide{grid-column:span 2}}
+    /* Etapa 4: accesos a supervision e instalacion */
+    .stage4-panel{border:1px solid #E2E5E9;background:#fff;border-radius:16px;padding:16px;display:grid;gap:10px}
+    .stage4-header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .stage4-panel p{font-size:12px;color:#687481;margin:0;line-height:1.55}
+    .stage4-link{display:flex;justify-content:center;align-items:center;text-decoration:none;border-radius:11px;min-height:47px;padding:10px 15px;background:#212121;color:white;font-size:14px;font-weight:800}
+    .stage4-link:focus-visible{outline:3px solid #D32F2F;outline-offset:3px}
   </style>
 </head>
 <body>
@@ -96,7 +107,7 @@
 
     <section id="setupScreen" class="spaced">
       <div class="card"><div class="card-body">
-        <div class="section-head"><div><p class="eyebrow">Etapa 3 · Registro operativo</p><h2>Apertura de circuito</h2><div class="section-sub">Ingresa los datos antes de iniciar el recorrido.</div></div><span class="section-n">01</span></div>
+        <div class="section-head"><div><p class="eyebrow">Etapa 4 · Registro operativo</p><h2>Apertura de circuito</h2><div class="section-sub">Ingresa los datos antes de iniciar el recorrido.</div></div><span class="section-n">01</span></div>
         <form id="startForm" novalidate>
           <div class="fields">
             <div class="field"><label for="equipo">Equipo / Camión aljibe *</label><input id="equipo" name="equipo" maxlength="80" autocomplete="off" required placeholder="Ej.: Aljibe 10"></div>
@@ -113,8 +124,16 @@
         </form>
       </div></div>
       <div class="info-bar"><span>◉</span><div><strong id="pendingCount">0 circuitos pendientes</strong> · <strong id="cloudCount">0</strong> confirmados en Google Sheets.</div></div>
+      <div class="stage4-panel">
+        <div class="stage4-header"><div><p class="eyebrow">Etapa 4 · PWA</p><h2>Supervisión e instalación</h2></div><span class="sync-pill">v0.4</span></div>
+        <p>Panel de circuitos locales y, con credencial independiente, registros confirmados de Google Sheets.</p>
+        <a class="stage4-link" href="./supervision.html">▤ &nbsp; Abrir panel de supervisión</a>
+        <button id="installPwaButton" class="button light full" type="button" hidden>＋ &nbsp; Instalar aplicación</button>
+        <p id="pwaInstallHint">Para instalar: en Android usa el menú de Chrome → Instalar app. En iPhone abre el menú Compartir → Añadir a pantalla de inicio.</p>
+        <p id="pwaOfflineState">Preparando versión offline...</p>
+      </div>
       <div class="card"><div class="card-body">
-        <div class="sync-header"><div><p class="eyebrow">Sincronización</p><h2>Conexión con Google Sheets</h2><div class="section-sub" id="syncInfo">Pendiente de configuración</div></div><span class="sync-pill">ETAPA 3</span></div>
+        <div class="sync-header"><div><p class="eyebrow">Sincronización</p><h2>Conexión con Google Sheets</h2><div class="section-sub" id="syncInfo">Pendiente de configuración</div></div><span class="sync-pill">ETAPA 4</span></div>
         <form id="syncConfigForm" autocomplete="off">
           <div class="sync-controls">
             <div class="field wide"><label for="syncUrl">URL original de Apps Script /exec *</label>
@@ -206,7 +225,7 @@
 
     <section id="historyScreen" class="spaced" hidden>
       <div class="card"><div class="card-body">
-        <div class="section-head"><div><p class="eyebrow">Etapa 3 · Consulta y reportes</p><h2>Historial de circuitos</h2>
+        <div class="section-head"><div><p class="eyebrow">Etapa 4 · Consulta y reportes</p><h2>Historial de circuitos</h2>
           <div class="section-sub">Datos almacenados en este navegador, incluso sin conexión.</div></div>
           <button id="historyBack" class="button light" type="button" style="padding:8px 12px;min-height:40px">← Volver</button></div>
         <div class="hist-controls"><input id="historySearch" placeholder="Buscar equipo, patente, operador, fecha" aria-label="Buscar circuitos">
@@ -225,7 +244,7 @@
       </div></div>
     </section>
   </main>
-  <footer class="footer">ICV · Control de Riego & Telemetría GPS · Versión 0.3.0 · Historial, CSV y sincronización verificable · No sustituye sistemas certificados de control de velocidad.</footer>
+  <footer class="footer">ICV · Control de Riego & Telemetría GPS · Versión 0.4.0 · PWA, supervisión, historial, CSV y sincronización verificable · No sustituye sistemas certificados de control de velocidad.</footer>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
 <script>
@@ -783,7 +802,32 @@
 
   init();
   // Hook deliberadamente solo lectura para pruebas automatizadas; no altera telemetría.
-  window.ICV_RIEGO_DIAG=Object.freeze({version:'0.3.0',getState:()=>({activo:!!estado.circuito,puntos:estado.circuito?estado.circuito.puntos.length:0,distancia_m:estado.circuito?round(estado.circuito.totalMetros,2):0,descartadas:estado.discarded,estado_local:estado.circuito?estado.circuito.estado_local:'SIN_CIRCUITO',demo:demoQuery})});
+  window.ICV_RIEGO_DIAG=Object.freeze({version:'0.4.0',getState:()=>({activo:!!estado.circuito,puntos:estado.circuito?estado.circuito.puntos.length:0,distancia_m:estado.circuito?round(estado.circuito.totalMetros,2):0,descartadas:estado.discarded,estado_local:estado.circuito?estado.circuito.estado_local:'SIN_CIRCUITO',demo:demoQuery})});
+})();
+</script>
+<script>
+/* Etapa 4 - Instalación PWA. Sin acceso a datos ni modificación del GPS. */
+(()=>{
+  const btn=document.getElementById('installPwaButton');
+  const state=document.getElementById('pwaOfflineState');
+  let installPrompt=null;
+  if ('serviceWorker' in navigator && window.isSecureContext) {
+    navigator.serviceWorker.register('./sw.js', {scope:'./'})
+      .then(()=>navigator.serviceWorker.ready)
+      .then(()=>{state.textContent='Interfaz base preparada para abrir sin red. El mapa de calles requiere conexión; conserva esta app en primer plano para registrar GPS.';})
+      .catch(err=>{state.textContent='No se pudo preparar el modo offline: '+err.message;});
+  } else {
+    state.textContent='El modo offline instalable requiere HTTPS y un navegador compatible.';
+  }
+  window.addEventListener('beforeinstallprompt',e=>{
+    e.preventDefault();installPrompt=e;btn.hidden=false;
+  });
+  btn.addEventListener('click',async()=>{
+    if (!installPrompt)return;
+    const prompt=installPrompt;installPrompt=null;btn.hidden=true;
+    try{await prompt.prompt();}catch(err){console.warn('Instalación no disponible:',err);}
+  });
+  window.addEventListener('appinstalled',()=>{btn.hidden=true;state.textContent='La aplicación quedó instalada en este dispositivo.';});
 })();
 </script>
 </body>
