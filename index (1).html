@@ -1,0 +1,790 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#D32F2F">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Registro, historial y sincronización verificable de recorridos GPS para camiones aljibe.">
+  <title>ICV | Control de Riego y Telemetría GPS</title>
+  <!-- ETAPA 3: token ingresado en el dispositivo, nunca incrustado en el repositorio. -->
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
+  <script async src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous" onload="window.dispatchEvent(new Event('icv-leaflet-ready'))"></script>
+  <style>
+    :root{--rojo:#D32F2F;--oscuro:#212121;--gris:#647080;--borde:#E2E5E9;--suave:#F4F6F8;--blanco:#FFF;--verde:#18834C;--font:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif}
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:var(--font);background:var(--suave);color:var(--oscuro)}
+    button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}
+    [hidden]{display:none!important}.app{max-width:840px;margin:0 auto;padding-bottom:calc(35px + env(safe-area-inset-bottom))}
+    .header{background:var(--oscuro);color:#fff;position:relative;overflow:hidden;padding:19px 17px 17px;border-bottom:5px solid var(--rojo)}
+    .header:after{content:"";position:absolute;width:200px;height:200px;right:-135px;top:-115px;border:38px solid rgba(255,255,255,.045);border-radius:50%;pointer-events:none}
+    .masthead{display:flex;gap:12px;align-items:center}.logo-box{display:grid;place-items:center;background:var(--rojo);border-radius:12px;width:46px;height:46px;flex:none;font-size:17px;font-weight:900;letter-spacing:-1px;color:#fff}
+    h1{font-size:19px;line-height:1.2;margin:0;letter-spacing:-.4px}h2{margin:0;font-size:18px;letter-spacing:-.3px}h3{margin:0;font-size:14px}.subhead{font-size:11px;letter-spacing:1.5px;color:#C8CED5;text-transform:uppercase;margin-bottom:2px;font-weight:700}
+    .header-foot{display:flex;align-items:center;justify-content:space-between;margin-top:16px;gap:8px;flex-wrap:wrap}.chip{display:inline-flex;gap:6px;align-items:center;white-space:nowrap;padding:7px 10px;border-radius:99px;font-size:11px;font-weight:750;background:#424242;color:#fff}
+    .chip i,.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#D9DFE6}.chip.good i{background:#4ADE80}.chip.bad i{background:#FF7676}.chip.warn i{background:#FACC15}
+    .date-text{font-size:11px;color:#D5DADF}.test-ribbon{background:#FFF0C8;color:#7F4B00;border-bottom:1px solid #F3D794;padding:10px 17px;font-weight:800;text-align:center;letter-spacing:1px}
+    main{padding:16px;display:grid;gap:16px}.card{border:1px solid var(--borde);border-radius:17px;background:#fff;box-shadow:0 4px 16px rgba(20,31,43,.04);overflow:hidden}
+    .card-body{padding:18px}.section-head{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:17px}.section-sub{margin-top:5px;font-size:12px;color:var(--gris);line-height:1.5}
+    .eyebrow{font-size:11px;color:var(--rojo);letter-spacing:1px;font-weight:900;text-transform:uppercase;margin:0 0 6px}.section-n{font-size:12px;font-weight:850;color:#fff;background:var(--rojo);border-radius:9px;padding:6px 8px}
+    .fields{display:grid;grid-template-columns:1fr;gap:13px}.field label{display:block;font-size:12px;font-weight:750;margin-bottom:7px;color:#343B46}.field input,.field select{width:100%;background:#fff;color:#252A32;border:1px solid #D5DADF;outline:0;border-radius:10px;height:46px;padding:0 13px;font-size:15px;transition:border-color .15s,box-shadow .15s}
+    .field input:focus,.field select:focus{border-color:var(--rojo);box-shadow:0 0 0 3px rgba(211,47,47,.09)}.field input::placeholder{color:#96A0AC}.field .hint{font-size:11px;color:var(--gris);margin-top:5px}
+    .unit-wrap{position:relative}.unit-wrap input{padding-right:74px}.unit{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--gris);font-weight:700;pointer-events:none}
+    .notice{display:flex;gap:9px;align-items:flex-start;padding:12px 13px;border-radius:11px;background:#F7F8FA;border:1px solid #EAECF0;color:#4A5564;font-size:12px;line-height:1.5}.notice.warn{background:#FFF4EE;border-color:#FFD7BD;color:#82410B}.notice.err{background:#FFF0F0;border-color:#FFD0D0;color:#8C2424}.notice strong{color:inherit}.notice-icon{font-weight:900;font-size:15px;line-height:1.1}
+    .button{border:0;border-radius:12px;padding:14px 17px;min-height:50px;font-weight:850;font-size:14px;display:inline-flex;align-items:center;justify-content:center;gap:9px;line-height:1.3;text-align:center}
+    .button.primary{background:var(--rojo);color:#fff}.button.dark{background:var(--oscuro);color:#fff}.button.light{background:#F5F6F8;color:#29313A;border:1px solid #DBDFE5}.button.danger-outline{background:#fff;color:var(--rojo);border:1px solid #EFBBBB}
+    .full{width:100%}.btn-stack{display:grid;gap:10px}.kpi-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.kpi{background:#F6F7F9;border:1px solid #EBEDF0;border-radius:12px;padding:13px 12px}
+    .kpi-label{font-size:11px;letter-spacing:.15px;color:#697482;font-weight:750}.kpi-number{font-size:22px;font-weight:900;line-height:1.35;letter-spacing:-.6px;font-variant-numeric:tabular-nums;margin-top:2px}.kpi-unit{font-size:11px;font-weight:700;color:#707B88;margin-left:2px}
+    .speed-panel{background:var(--oscuro);color:#fff;padding:22px 18px;border-radius:16px;position:relative;overflow:hidden}.speed-panel:before{content:"";position:absolute;top:-70px;right:-70px;width:220px;height:220px;border:25px solid rgba(255,255,255,.04);border-radius:50%}.speed-panel.excess{background:#A71F1F}
+    .speed-label{position:relative;color:#D3D7DD;font-size:12px;font-weight:750;letter-spacing:.8px;text-transform:uppercase}.speed-big{position:relative;display:flex;gap:11px;align-items:baseline;margin-top:4px}.speed-num{font-size:clamp(75px,19vw,112px);letter-spacing:-6px;font-variant-numeric:tabular-nums;font-weight:900;line-height:1.05}.speed-unit{font-size:16px;font-weight:750;color:#D9DEE6}.speed-bottom{position:relative;display:flex;justify-content:space-between;gap:7px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.18);padding-top:13px;margin-top:10px}.speed-bottom span{font-size:12px;color:#E6EBF0}.speed-bottom strong{font-weight:850;color:#fff}
+    .alert{background:#C42323;color:#fff;border-radius:13px;padding:14px;display:flex;align-items:center;gap:12px;font-weight:900;font-size:14px;letter-spacing:.35px;box-shadow:0 8px 17px rgba(196,35,35,.2);animation:pulse 1.2s ease-in-out infinite alternate}
+    @keyframes pulse{to{box-shadow:0 4px 23px rgba(196,35,35,.42)}}@media(prefers-reduced-motion:reduce){.alert{animation:none}}
+    .route-header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:13px}.route-summary{font-size:12px;color:#6D7782;line-height:1.5}.route-summary strong{color:#222}
+    .map-shell{height:330px;background-color:#F1F4F6;background-image:linear-gradient(#E1E7EB 1px,transparent 1px),linear-gradient(90deg,#E1E7EB 1px,transparent 1px);background-size:36px 36px;position:relative;overflow:hidden;border-radius:13px;border:1px solid #DEE4E8}
+    #map{height:100%;width:100%;z-index:1}.map-fallback{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column}.map-fallback svg{width:100%;flex:1;min-height:0}.fallback-note{padding:8px 10px;background:rgba(255,255,255,.86);font-size:11px;color:#5C6674;text-align:center}
+    .map-ribbon{position:absolute;z-index:500;left:10px;top:10px;padding:7px 10px;background:rgba(33,33,33,.82);border-radius:9px;font-size:11px;color:#fff;max-width:calc(100% - 20px);pointer-events:none}
+    .legend{display:flex;gap:15px;flex-wrap:wrap;margin-top:11px;color:#63707B;font-size:12px;font-weight:700}.legend span{display:flex;align-items:center;gap:6px}.line{height:4px;width:20px;border-radius:99px;background:var(--verde)}.line.red{background:var(--rojo)}
+    .foot-stat{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #EDF0F1;font-size:13px}.foot-stat:last-child{border:0}.foot-stat span:first-child{color:#6B7786}.foot-stat strong{font-variant-numeric:tabular-nums;text-align:right}
+    .state-line{font-size:12px;color:#66717F;line-height:1.4}.state-line strong{color:#303943}.footer{padding:10px 20px;text-align:center;font-size:11px;color:#8A929D;line-height:1.6}
+    .result-title{font-size:23px;font-weight:900;letter-spacing:-.7px;line-height:1.15}.finish-icon{width:54px;height:54px;display:grid;place-items:center;background:#E6F5E9;color:#17723B;border-radius:17px;font-size:28px;margin-bottom:15px}
+    .info-bar{background:#fff;border:1px solid #E3E7EB;border-radius:13px;padding:12px 14px;display:flex;align-items:center;gap:9px;font-size:12px;color:#66717F}.info-bar strong{color:#25303B}
+    #toast{position:fixed;z-index:9000;left:14px;right:14px;bottom:calc(18px + env(safe-area-inset-bottom));margin:auto;max-width:520px;box-shadow:0 12px 25px rgba(0,0,0,.2);border-radius:12px;background:#222;color:white;padding:14px 16px;font-size:13px;line-height:1.5;font-weight:650;opacity:0;transform:translateY(20px);transition:.22s;pointer-events:none}
+    #toast.show{opacity:1;transform:translateY(0)}.minor{color:#7F8A95;font-size:11px;line-height:1.5}.spaced{display:grid;gap:12px}
+    @media(min-width:600px){main{padding:22px}.fields{grid-template-columns:repeat(2,minmax(0,1fr))}.field.wide{grid-column:span 2}.kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.map-shell{height:415px}.btn-stack{grid-template-columns:1fr 1fr}.speed-panel{padding:24px}.header{padding:21px 25px 18px}.speed-num{font-size:106px}}
+  
+    /* Etapa 3: sincronizacion, historial y CSV */
+    .sync-header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+    .sync-pill{font-size:11px;font-weight:800;padding:5px 9px;border-radius:20px;background:#EDF4EF;color:#28653E}
+    .sync-controls{margin-top:12px;display:grid;gap:10px}
+    .sync-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .sync-actions .button{flex:1 1 155px}
+    .check-line{display:flex;align-items:flex-start;gap:9px;font-size:12px;color:#4D5865;line-height:1.5;margin:5px 0}
+    .check-line input{accent-color:#D32F2F;margin-top:2px;min-width:16px;min-height:16px}
+    .hist-controls{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:10px}
+    .hist-controls input,.hist-controls select{min-height:44px;border-radius:10px;border:1px solid #D4DADF;padding:10px 12px;min-width:0;background:#FFF;color:#26303C}
+    .hist-controls input{flex:1 1 160px}.hist-controls select{flex:0 1 150px}
+    .history-item{border:1px solid #E6E9ED;border-radius:12px;padding:14px;margin-bottom:10px;background:#FFF}
+    .history-top{display:flex;gap:9px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:7px;font-size:14px}
+    .mini-state{font-size:10px;font-weight:850;color:#A35C03;background:#FFF2DC;border-radius:8px;padding:5px 8px;text-transform:uppercase}
+    .mini-state.ok{color:#177A42;background:#E5F6EA}
+    .history-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+    .history-actions .button{font-size:11px;padding:8px 12px;min-height:38px;flex:1 1 115px}
+    .history-map-shell{height:320px;border-radius:12px;border:1px solid #DFE4E8;overflow:hidden;position:relative;background:#F3F6F7}
+    #historyMap{width:100%;height:100%}
+    #historySvgFallback{width:100%;height:100%;background-image:linear-gradient(#E1E7EB 1px,transparent 1px),linear-gradient(90deg,#E1E7EB 1px,transparent 1px);background-size:36px 36px}
+    #historySvg{width:100%;height:100%}
+    .error-small{color:#9D2828!important;margin-top:6px;overflow-wrap:anywhere}
+    .muted-panel{background:#F7F8FA;border:1px solid #E6EAED;padding:11px;border-radius:10px;color:#596372;font-size:12px;line-height:1.5}
+    .mono{font-family:ui-monospace,Consolas,monospace;font-size:11px;overflow-wrap:anywhere}
+    @media(min-width:600px){.sync-controls{grid-template-columns:1fr 1fr}.sync-controls .wide{grid-column:span 2}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="masthead"><div class="logo-box" aria-label="Identificador de aplicación ICV">ICV</div><div>
+      <div class="subhead">Salares Norte · Operaciones Mina</div>
+      <h1>Control de Riego <span style="font-weight:450">& GPS</span></h1>
+    </div></div>
+    <div class="header-foot">
+      <span class="chip" id="connectionChip"><i></i><span id="connectionText">Comprobando conexión</span></span>
+      <span class="date-text" id="headerDate">—</span>
+    </div>
+  </header>
+  <div class="test-ribbon" id="demoRibbon" hidden>VERSIÓN DE PRUEBA · GPS SIMULADO · NO USAR EN OPERACIÓN REAL</div>
+  <main>
+    <div id="globalWarning" class="notice err" role="alert" hidden><span class="notice-icon">!</span><span id="warningText"></span></div>
+
+    <section id="setupScreen" class="spaced">
+      <div class="card"><div class="card-body">
+        <div class="section-head"><div><p class="eyebrow">Etapa 3 · Registro operativo</p><h2>Apertura de circuito</h2><div class="section-sub">Ingresa los datos antes de iniciar el recorrido.</div></div><span class="section-n">01</span></div>
+        <form id="startForm" novalidate>
+          <div class="fields">
+            <div class="field"><label for="equipo">Equipo / Camión aljibe *</label><input id="equipo" name="equipo" maxlength="80" autocomplete="off" required placeholder="Ej.: Aljibe 10"></div>
+            <div class="field"><label for="patente">Patente / Identificador *</label><input id="patente" name="patente" maxlength="30" autocomplete="off" autocapitalize="characters" required placeholder="Ej.: CE-010"></div>
+            <div class="field wide"><label for="operador">Nombre del operador *</label><input id="operador" name="operador" maxlength="120" autocomplete="name" required placeholder="Nombre y apellido"></div>
+            <div class="field"><label for="turno">Turno *</label><select id="turno" name="turno" required><option value="DIA">Día (08:00–20:00)</option><option value="NOCHE">Noche (20:00–08:00)</option></select></div>
+            <div class="field"><label for="litros">Agua cargada *</label><div class="unit-wrap"><input id="litros" name="litros" type="number" min="1" max="100000" step="1" inputmode="numeric" required placeholder="Ej.: 10000"><span class="unit">litros</span></div></div>
+            <div class="field wide"><label for="limite">Límite de velocidad autorizado *</label><div class="unit-wrap"><input id="limite" name="limite" type="number" min="1" max="120" step="1" inputmode="numeric" required value="30"><span class="unit">km/h</span></div><div class="hint">Confirmar el límite vigente de la ruta con supervisión.</div></div>
+          </div>
+          <div style="height:14px"></div>
+          <div class="notice"><span class="notice-icon">ⓘ</span><span>El GPS del celular requiere permiso de ubicación. La precisión puede variar según cobertura satelital, dispositivo y condiciones de la faena.</span></div>
+          <div style="height:14px"></div>
+          <button class="button primary full" type="submit" id="startBtn">▶ &nbsp; Iniciar circuito y GPS</button>
+        </form>
+      </div></div>
+      <div class="info-bar"><span>◉</span><div><strong id="pendingCount">0 circuitos pendientes</strong> · <strong id="cloudCount">0</strong> confirmados en Google Sheets.</div></div>
+      <div class="card"><div class="card-body">
+        <div class="sync-header"><div><p class="eyebrow">Sincronización</p><h2>Conexión con Google Sheets</h2><div class="section-sub" id="syncInfo">Pendiente de configuración</div></div><span class="sync-pill">ETAPA 3</span></div>
+        <form id="syncConfigForm" autocomplete="off">
+          <div class="sync-controls">
+            <div class="field wide"><label for="syncUrl">URL original de Apps Script /exec *</label>
+              <input id="syncUrl" inputmode="url" type="url" placeholder="https://script.google.com/macros/s/.../exec" spellcheck="false" required></div>
+            <div class="field wide"><label for="syncToken">INGEST_TOKEN del proyecto *</label>
+              <input id="syncToken" type="password" placeholder="Pegar token de 64 caracteres" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+              <div class="hint">El token no forma parte del código público en GitHub. No compartas capturas de este campo.</div></div>
+          </div>
+          <div style="height:10px"></div>
+          <label class="check-line"><input id="syncRecordar" type="checkbox"> Recordar token en este dispositivo (solo pruebas; puede quedar expuesto si el teléfono está comprometido)</label>
+          <label class="check-line"><input id="syncDemo" type="checkbox"> Autorizar explícitamente envío de circuitos DEMO a Sheets (solo pruebas, nunca operación real)</label>
+          <div class="sync-actions">
+            <button type="submit" class="button dark">Guardar conexión</button>
+            <button type="button" class="button primary" id="syncAllButton">↻ Sincronizar pendientes</button>
+          </div>
+        </form>
+        <div style="height:12px"></div>
+        <div class="notice warn"><span class="notice-icon">!</span><span>Un envío <code>no-cors</code> no confirma recepción. El sistema consulta un acuse firmado y solo marca <strong>Confirmado</strong> si Sheets registra el circuito completo. Requiere backend actualizado a Etapa 3.</span></div>
+      </div></div>
+      <div class="card"><div class="card-body">
+        <div class="sync-header"><div><p class="eyebrow">Consulta local</p><h2>Historial de recorridos</h2></div><span class="section-n" id="historyCount">0</span></div>
+        <div class="section-sub">Consulta circuitos anteriores, reconstruye su ruta y exporta reportes CSV.</div>
+        <div class="sync-actions">
+          <button type="button" class="button light" id="historyButton">◎ Abrir historial</button>
+          <button type="button" class="button light" id="csvSummaryButton">↓ Resumen CSV</button>
+          <button type="button" class="button light" id="jsonBackupButton">↓ Respaldo JSON</button>
+        </div>
+      </div></div>
+      <div class="notice warn"><span class="notice-icon">!</span><span><strong>Seguridad operacional:</strong> configura el teléfono antes de iniciar la marcha. No manipules la aplicación mientras conduces.</span></div>
+    </section>
+
+    <section id="runningScreen" class="spaced" hidden>
+      <div class="info-bar"><span>●</span><div><strong id="runningTitle">Circuito en curso</strong><div class="minor" id="runningInfo">—</div></div></div>
+      <div class="alert" id="speedAlert" role="alert" hidden><span style="font-size:24px">⚠</span><div>EXCESO DE VELOCIDAD<div style="font-size:11px;font-weight:600;margin-top:2px" id="alertDetail">Reduzca la velocidad según el límite autorizado.</div></div></div>
+      <div class="speed-panel" id="speedPanel">
+        <div class="speed-label">Velocidad instantánea GPS</div>
+        <div class="speed-big"><span class="speed-num" id="speedNumber">0</span><span class="speed-unit">km/h</span></div>
+        <div class="speed-bottom"><span>Límite: <strong id="speedLimit">30 km/h</strong></span><span id="gpsStatus">Esperando primera ubicación GPS...</span></div>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-label">Distancia recorrida</div><div class="kpi-number"><span id="distanceValue">0,00</span><span class="kpi-unit">km</span></div></div>
+        <div class="kpi"><div class="kpi-label">Tiempo de circuito</div><div class="kpi-number" id="durationValue">00:00</div></div>
+        <div class="kpi"><div class="kpi-label">Rendimiento nominal</div><div class="kpi-number"><span id="yieldValue">—</span><span class="kpi-unit">L/km</span></div></div>
+        <div class="kpi"><div class="kpi-label">Muestras de exceso</div><div class="kpi-number" id="excessValue">0</div></div>
+      </div>
+      <div class="card"><div class="card-body">
+        <div class="route-header"><div><h2>Recorrido GPS</h2><div class="section-sub">Verde: normal · Rojo: velocidad sobre el límite.</div></div><button class="button light" type="button" style="min-height:38px;padding:9px 11px;font-size:12px" id="followButton">◎ Seguir</button></div>
+        <div class="map-shell" id="mapShell"><div id="map" aria-label="Mapa del recorrido"></div><div id="mapFallback" class="map-fallback" hidden><svg id="routeSvg" viewBox="0 0 1000 650" aria-label="Vista vectorial del recorrido"></svg><div class="fallback-note">Trazado vectorial disponible sin mapa base</div></div><div class="map-ribbon" id="mapRibbon">A la espera de coordenadas</div></div>
+        <div class="legend"><span><i class="line"></i>Velocidad normal</span><span><i class="line red"></i>Sobre límite</span><span>● Posición actual</span></div>
+      </div></div>
+      <div class="card"><div class="card-body"><h2>Estado de telemetría</h2>
+        <div class="foot-stat"><span>Precisión GPS</span><strong id="accuracyValue">—</strong></div>
+        <div class="foot-stat"><span>Última lectura GPS</span><strong id="lastReadingValue">—</strong></div>
+        <div class="foot-stat"><span>Puntos válidos almacenados</span><strong id="pointCountValue">0</strong></div>
+        <div class="foot-stat"><span>Lecturas descartadas</span><strong id="rejectedValue">0</strong></div>
+        <div class="foot-stat"><span>Respaldo local</span><strong id="savedValue">Esperando</strong></div>
+        <div class="foot-stat"><span>Pantalla activa (Wake Lock)</span><strong id="wakeValue">—</strong></div>
+        <div style="height:12px"></div>
+        <div class="notice warn" id="resumeNotice" hidden><span class="notice-icon">!</span><span>El circuito fue recuperado del almacenamiento local. Presiona <strong>Reanudar GPS</strong> para continuar registrando el recorrido.</span></div>
+        <div class="btn-stack" style="margin-top:14px">
+          <button class="button light" type="button" id="retryGpsButton">↻ &nbsp; Reanudar / Reintentar GPS</button>
+          <button class="button danger-outline" type="button" id="finishButton">■ &nbsp; Finalizar y guardar</button>
+        </div>
+        <div style="margin-top:11px"><button class="button light full" type="button" id="cancelEmptyButton">Cancelar apertura sin lecturas GPS</button></div>
+        <div id="demoTools" hidden style="margin-top:11px"><button class="button dark full" type="button" id="demoBtn">✧ Generar recorrido simulado (12 puntos)</button></div>
+        <p class="minor" style="margin:12px 0 0">El registro funciona en primer plano. Si el teléfono bloquea la pantalla o el navegador entra en segundo plano, las lecturas GPS pueden detenerse.</p>
+      </div></div>
+    </section>
+
+    <section id="completedScreen" class="spaced" hidden>
+      <div class="card"><div class="card-body">
+        <div class="finish-icon">✓</div><p class="eyebrow">Circuito finalizado</p><div class="result-title">Recorrido guardado localmente</div>
+        <p class="section-sub">El circuito permanece en el teléfono hasta que Google Sheets confirme el cierre y todos los puntos GPS.</p>
+        <div style="height:10px"></div><div class="kpi-grid">
+          <div class="kpi"><div class="kpi-label">Distancia</div><div class="kpi-number" id="finalDistance">0,00 km</div></div>
+          <div class="kpi"><div class="kpi-label">Puntos GPS</div><div class="kpi-number" id="finalPoints">0</div></div>
+          <div class="kpi"><div class="kpi-label">Vel. máxima</div><div class="kpi-number" id="finalMaxSpeed">0 km/h</div></div>
+          <div class="kpi"><div class="kpi-label">Muestras exceso</div><div class="kpi-number" id="finalExcess">0</div></div>
+        </div>
+        <div style="height:12px"></div><div class="foot-stat"><span>ID de circuito</span><strong style="font-size:11px;overflow-wrap:anywhere" id="finalId">—</strong></div>
+        <div class="foot-stat"><span>Estado nube</span><strong id="completedCloudState">PENDIENTE</strong></div>
+        <div style="height:16px"></div><div class="btn-stack">
+          <button class="button primary full" id="newCircuitButton">＋ &nbsp; Registrar una nueva carga</button>
+          <button class="button light full" id="historyAfterClose">◎ &nbsp; Abrir historial y estado de sincronización</button>
+        </div>
+      </div></div>
+      <div class="notice warn"><span class="notice-icon">!</span><span>No borres los datos del navegador ni uses navegación privada. Los registros permanecen locales hasta su confirmación en Sheets.</span></div>
+    </section>
+
+    <section id="historyScreen" class="spaced" hidden>
+      <div class="card"><div class="card-body">
+        <div class="section-head"><div><p class="eyebrow">Etapa 3 · Consulta y reportes</p><h2>Historial de circuitos</h2>
+          <div class="section-sub">Datos almacenados en este navegador, incluso sin conexión.</div></div>
+          <button id="historyBack" class="button light" type="button" style="padding:8px 12px;min-height:40px">← Volver</button></div>
+        <div class="hist-controls"><input id="historySearch" placeholder="Buscar equipo, patente, operador, fecha" aria-label="Buscar circuitos">
+          <select id="historyFilter" aria-label="Filtrar circuitos"><option value="todos">Todos</option><option value="pendientes">Pendientes</option><option value="confirmados">Confirmados</option><option value="demo">Simulados</option></select></div>
+        <div style="height:14px"></div><div id="historyList"></div>
+      </div></div>
+      <div class="card" id="historyDetail" hidden><div class="card-body">
+        <div class="route-header"><div><p class="eyebrow">Reconstrucción GPS</p><h2 id="historyDetailTitle">Circuito</h2><div class="section-sub" id="historyDetailMeta">—</div></div>
+          <button id="historyDetailClose" type="button" class="button light" style="min-height:38px;padding:8px">Cerrar</button></div>
+        <div class="history-map-shell"><div id="historyMap"></div>
+          <div id="historySvgFallback" hidden><svg viewBox="0 0 1000 650" id="historySvg" aria-label="Ruta GPS sin mapa base"></svg></div></div>
+        <div class="legend"><span><i class="line"></i>Velocidad normal</span><span><i class="line red"></i>Sobre límite</span></div>
+        <div class="muted-panel" style="margin:11px 0" id="historyDetailState">Pendiente</div>
+        <div class="sync-actions"><button class="button light" id="csvDetailButton">↓ Exportar GPS CSV</button>
+          <button class="button primary" id="syncDetailButton">↻ Sincronizar circuito</button></div>
+      </div></div>
+    </section>
+  </main>
+  <footer class="footer">ICV · Control de Riego & Telemetría GPS · Versión 0.3.0 · Historial, CSV y sincronización verificable · No sustituye sistemas certificados de control de velocidad.</footer>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+'use strict';
+(() => {
+  /* ETAPA 3: registro local; sincronizacion solo cuando se configura el receptor. */
+  const STORAGE = Object.freeze({active:'icv_riego_v1_circuito_activo', pending:'icv_riego_v1_circuitos_pendientes'});
+  const CFG = Object.freeze({maxAccuracyM:60, maxJumpM:200, minSpeedKmh:2, minMovementM:7, maxSpeedKmh:120, stationaryKeepaliveMs:90000, autoSaveMs:5000, maxPoints:10000});
+  const demoQuery = new URLSearchParams(location.search).get('demo') === '1';
+  const $ = id => document.getElementById(id);
+  const estado = {circuito:null,watchId:null,wakeLock:null,map:null,osmTiles:null,marker:null,segments:[],follow:true,saveTime:0,gpsTime:null,accuracy:null,currentSpeed:0,discarded:0,excess:false,storageOK:false,gpsError:null,timer:null,demoUsed:false};
+  let toastTimer;
+  const dec = (n,d=1) => Number(n).toLocaleString('es-CL',{minimumFractionDigits:d,maximumFractionDigits:d});
+  const round = (n,d=2) => Math.round((n + Number.EPSILON)*10**d)/10**d;
+  const text = (id, value) => { $(id).textContent = value; };
+
+  function toast(message) {const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),4700);}
+  function warn(message) {$('warningText').textContent=message;$('globalWarning').hidden=false;}
+  function clearWarning() {$('globalWarning').hidden=true;}
+  function hasStorage() {try {const k='__icv_probe';localStorage.setItem(k,'1');localStorage.removeItem(k);return true;}catch(_){return false;}}
+  function readStore(key,fallback){try{const value=localStorage.getItem(key);return value?JSON.parse(value):fallback;}catch(_){return fallback;}}
+  function writeStore(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true;}catch(e){warn('No se pudo guardar en el dispositivo (posible falta de espacio o almacenamiento bloqueado). Conserva esta página abierta y evita continuar el recorrido sin respaldo.');console.error('localStorage:',e);return false;}}
+  function zoneDate(date){const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);const val=part=>parts.find(x=>x.type===part).value;return `${val('year')}-${val('month')}-${val('day')}`;}
+  function zoneHour(date) {return new Intl.DateTimeFormat('es-CL',{timeZone:'America/Santiago',hour:'2-digit',minute:'2-digit',hour12:false}).format(date);}
+  function formatDuration(ms){const m=Math.max(0,Math.floor(ms/60000));const h=Math.floor(m/60);const r=m%60;return String(h).padStart(2,'0')+':'+String(r).padStart(2,'0');}
+  function safeInput(s){return typeof s==='string'&&!!s.trim()&&s.length<=120&&!/^[=+@]/.test(s.trim())&&!/[\n\r\t]/.test(s);}
+  function uuid(){if(window.crypto&&crypto.randomUUID)return crypto.randomUUID().replace(/-/g,'');return `${Date.now().toString(36)}${Math.random().toString(36).slice(2,16)}`;}
+  function validCircuit(c){return c&&c.resumen&&typeof c.resumen.circuito_id==='string'&&Array.isArray(c.puntos)&&c.estado_local==='EN_CURSO';}
+
+  function haversine(a,b){const rad=Math.PI/180,R=6371000,dLat=(b.lat-a.lat)*rad,dLon=(b.lon-a.lon)*rad;const x=Math.sin(dLat/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dLon/2)**2;return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(Math.max(0,1-x)));}
+  function updateConnection(){const online=navigator.onLine,chip=$('connectionChip');chip.className='chip '+(online?'good':'warn');text('connectionText',online?'Con red · respaldo local':'Sin red · respaldo local');if(estado.circuito)updateMapBase();actualizarEstadoNube();}
+  function show(screen){['setupScreen','runningScreen','completedScreen','historyScreen'].forEach(id=>$(id).hidden=id!==screen);if(screen==='runningScreen'){setTimeout(()=>{if(estado.map)estado.map.invalidateSize();},100);renderMap();}}
+  function updatePending(){actualizarEstadoNube();}
+  function persistActive(force=false){if(!estado.circuito)return false;const now=Date.now();if(!force&&now-estado.saveTime<CFG.autoSaveMs)return true;const ok=writeStore(STORAGE.active,estado.circuito);if(ok){estado.saveTime=now;text('savedValue',zoneHour(new Date())+' · local');}return ok;}
+
+  function createCircuit(form){const now=new Date(),isDemo=demoQuery;const inicio=new Date(isDemo?now.getTime()-120000:now.getTime());const id=(isDemo?'TEST_':'CR_')+zoneDate(now).replace(/-/g,'')+'_'+uuid().slice(0,23);
+    return {
+      protocolo:1,modo:isDemo?'DEMO':'REAL',estado_local:'EN_CURSO',
+      resumen:{circuito_id:id,fecha_operacion:zoneDate(now),equipo:form.equipo,patente:form.patente,operador:form.operador,turno:form.turno,litros_cargados:form.litros,limite_velocidad_kmh:form.limite,inicio_iso:inicio.toISOString(),fin_iso:null,puntos_esperados:0},
+      puntos:[],totalMetros:0,velocidad_max_kmh:0,muestras_exceso:0,descartadas:0,ultima_actualizacion_iso:now.toISOString()
+    };
+  }
+  function startFromForm(ev){ev.preventDefault();if(!estado.storageOK){warn('Almacenamiento local no disponible. No es seguro iniciar un circuito.');return;}if(estado.circuito){toast('Ya existe un circuito en curso.');return;}
+    const form={equipo:$('equipo').value.trim(),patente:$('patente').value.trim().toUpperCase(),operador:$('operador').value.trim(),turno:$('turno').value,litros:Number($('litros').value),limite:Number($('limite').value)};
+    if(!safeInput(form.equipo)||form.equipo.length>80||!safeInput(form.patente)||form.patente.length>30||!safeInput(form.operador)||form.operador.length>120){toast('Completa los datos sin caracteres de fórmula ni saltos de línea.');return;}
+    if(!['DIA','NOCHE'].includes(form.turno)||!Number.isInteger(form.litros)||form.litros<1||form.litros>100000||!Number.isFinite(form.limite)||form.limite<1||form.limite>120){toast('Revisa turno, litros (1–100.000) y límite de velocidad (1–120).');return;}
+    if(!demoQuery&&(!window.isSecureContext||!navigator.geolocation)){warn('Para utilizar GPS debes abrir esta aplicación desde una URL HTTPS (por ejemplo, GitHub Pages), autorizar ubicación y usar un navegador compatible.');return;}
+    clearWarning();estado.circuito=createCircuit(form);estado.discarded=0;estado.currentSpeed=0;estado.excess=false;estado.gpsTime=null;estado.accuracy=null;estado.demoUsed=false;
+    if(!persistActive(true)){estado.circuito=null;return;}
+    show('runningScreen');render();if(demoQuery){$('demoTools').hidden=false;text('gpsStatus','Modo simulación · sin GPS real');toast('Modo demostración activado. Los datos no son operacionales.');}
+    else{iniciarGPS();requestWake();toast('Circuito abierto. Esperando señal GPS.');}
+  }
+
+  function iniciarGPS(){if(!estado.circuito||estado.circuito.modo==='DEMO')return;if(!navigator.geolocation||!window.isSecureContext){warn('GPS no disponible: la aplicación requiere HTTPS y un navegador compatible.');return;}
+    if(estado.watchId!==null)navigator.geolocation.clearWatch(estado.watchId);estado.watchId=null;
+    text('gpsStatus','Solicitando permiso GPS...');$('resumeNotice').hidden=true;
+    try{estado.watchId=navigator.geolocation.watchPosition(recibirPosicion,geoError,{enableHighAccuracy:true,maximumAge:0,timeout:20000});}catch(e){warn('No se pudo iniciar el GPS: '+e.message);}
+  }
+  function geoError(e){const m={1:'Permiso de ubicación denegado. Habilítalo en los ajustes del navegador.',2:'Ubicación no disponible. Verifica que el GPS esté activado y tenga cielo despejado.',3:'Tiempo de espera GPS. Reintenta cuando mejore la recepción.'};estado.gpsError=m[e.code]||'Error GPS desconocido.';text('gpsStatus','GPS sin señal');toast(estado.gpsError);}
+  async function requestWake(){if(!estado.circuito||document.visibilityState!=='visible'||!('wakeLock'in navigator)||estado.circuito.modo==='DEMO'){text('wakeValue','No disponible');return;}
+    try{if(estado.wakeLock&&!estado.wakeLock.released){text('wakeValue','Activa');return;}const lock=await navigator.wakeLock.request('screen');estado.wakeLock=lock;lock.addEventListener('release',()=>{if(estado.wakeLock===lock){estado.wakeLock=null;text('wakeValue','Suspendida');}});text('wakeValue','Activa');}catch(e){text('wakeValue','No concedida');console.warn('Wake lock:',e);}
+  }
+  function stopSensors(){if(estado.watchId!==null&&navigator.geolocation)navigator.geolocation.clearWatch(estado.watchId);estado.watchId=null;if(estado.wakeLock){estado.wakeLock.release().catch(()=>{});estado.wakeLock=null;}text('wakeValue','Inactiva');}
+  function rejectFix(reason){estado.discarded++;if(estado.circuito)estado.circuito.descartadas=estado.discarded;text('rejectedValue',String(estado.discarded));text('gpsStatus',reason);}
+  function recibirPosicion(position){const c=estado.circuito;if(!c||c.estado_local!=='EN_CURSO')return;const crd=position.coords||{};
+    const lat=Number(crd.latitude),lon=Number(crd.longitude),accuracy=Number(crd.accuracy),ts=Number(position.timestamp);
+    if(!Number.isFinite(lat)||!Number.isFinite(lon)||lat>90||lat< -90||lon>180||lon< -180||!Number.isFinite(accuracy)||!Number.isFinite(ts)){rejectFix('Coordenada inválida');return;}
+    if(accuracy>CFG.maxAccuracyM){rejectFix('Precisión insuficiente (>'+CFG.maxAccuracyM+' m)');return;}
+    if(c.modo!=='DEMO'&&Date.now()-ts>45000){rejectFix('Lectura GPS antigua');return;}
+    const puntos=c.puntos,last=puntos[puntos.length-1];let distancia=0,elapsed=0;
+    if(last){const prev={lat:last.lat,lon:last.lon};distancia=haversine(prev,{lat,lon});elapsed=(ts-Date.parse(last.fecha_iso))/1000;
+      if(elapsed<=0){rejectFix('Tiempo GPS repetido');return;}
+      if(distancia>CFG.maxJumpM){rejectFix('Salto GPS >200 m descartado');return;}
+    }
+    estado.gpsTime=ts;estado.accuracy=accuracy;estado.gpsError=null;
+    const hasNative=typeof crd.speed==='number'&&Number.isFinite(crd.speed)&&crd.speed>=0;
+    const nativeKmh=hasNative?crd.speed*3.6:null;
+    const estimatedKmh=last&&elapsed>0?distancia/elapsed*3.6:0;
+    let velocity=hasNative?nativeKmh:estimatedKmh;
+    if(velocity>CFG.maxSpeedKmh){rejectFix('Velocidad GPS anómala descartada');return;}
+    const movementThreshold=Math.max(CFG.minMovementM,Math.min(15,accuracy*.45));
+    const moving=!!last&&distancia>=movementThreshold&&velocity>=CFG.minSpeedKmh;
+    if(!moving)velocity=0;
+    estado.currentSpeed=velocity;
+    const isOver=velocity>c.resumen.limite_velocidad_kmh;
+    estado.excess=isOver;
+    // Primera lectura: origen del circuito. Las sucesivas deben pasar filtros de movimiento.
+    const isFirst=!last;
+    const keepalive=!!last&&!moving&&elapsed*1000>=CFG.stationaryKeepaliveMs;
+    if(isFirst||moving||keepalive){
+      if(puntos.length>=CFG.maxPoints){warn('Se alcanzó el máximo local de '+CFG.maxPoints+' puntos GPS. Finaliza y conserva este registro; no se seguirán añadiendo coordenadas.');stopSensors();return;}
+      const tramo=moving?distancia:0;
+      c.totalMetros+=tramo;
+      const p={indice:puntos.length,fecha_iso:new Date(ts).toISOString(),lat:round(lat,6),lon:round(lon,6),precision_m:round(accuracy,1),velocidad_kmh:round(velocity,2),distancia_tramo_m:round(tramo,2),distancia_acumulada_km:round(c.totalMetros/1000,5)};
+      c.puntos.push(p);
+      c.velocidad_max_kmh=Math.max(c.velocidad_max_kmh,p.velocidad_kmh);
+      if(isOver)c.muestras_exceso++;
+      c.ultima_actualizacion_iso=new Date().toISOString();
+      persistActive();renderMapSegment();
+    }
+    render();
+  }
+  function render(){const c=estado.circuito;if(!c)return;const r=c.resumen,dist=c.totalMetros/1000;
+    text('runningTitle',r.equipo+' · '+r.patente);text('runningInfo',r.operador+' · Turno '+(r.turno==='DIA'?'día':'noche')+' · '+dec(r.litros_cargados,0)+' L');
+    text('speedNumber',String(Math.round(estado.currentSpeed)));text('speedLimit',dec(r.limite_velocidad_kmh,0)+' km/h');
+    $('speedPanel').classList.toggle('excess',estado.excess);$('speedAlert').hidden=!estado.excess;
+    text('alertDetail',`${dec(estado.currentSpeed)} km/h · límite ${dec(r.limite_velocidad_kmh,0)} km/h`);
+    text('distanceValue',dec(dist,2));text('durationValue',formatDuration(Date.now()-Date.parse(r.inicio_iso)));
+    text('yieldValue',dist>0.001?dec(r.litros_cargados/dist,0):'—');text('excessValue',String(c.muestras_exceso));
+    text('accuracyValue',estado.accuracy===null?'—':dec(estado.accuracy,1)+' m');text('lastReadingValue',estado.gpsTime?zoneHour(new Date(estado.gpsTime)):'—');
+    text('pointCountValue',String(c.puntos.length));text('rejectedValue',String(estado.discarded));$('cancelEmptyButton').hidden=c.puntos.length>0;
+    if(estado.gpsTime&&!estado.gpsError&&(estado.watchId!==null||c.modo==='DEMO'))text('gpsStatus',estado.currentSpeed<2?'GPS · detenido':'GPS · seguimiento activo');
+  }
+
+  function initMap(){if(estado.map||!window.L)return;try{
+      $('mapFallback').hidden=true;estado.map=L.map('map',{zoomControl:true,preferCanvas:true,attributionControl:true}).setView([-30,-70],5);
+      updateMapBase();renderMap();
+    }catch(e){console.warn('Leaflet no disponible:',e);estado.map=null;$('mapFallback').hidden=false;drawFallback();}
+  }
+  function updateMapBase(){if(!estado.map||!window.L)return;
+    if(navigator.onLine&&!estado.osmTiles){estado.osmTiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{minZoom:2,maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> colaboradores'}).addTo(estado.map);}
+    if(!navigator.onLine&&estado.osmTiles){estado.map.removeLayer(estado.osmTiles);estado.osmTiles=null;}
+    const count=estado.circuito?estado.circuito.puntos.length:0;
+    text('mapRibbon',navigator.onLine?'Mapa base OSM · GPS '+count+' puntos':'Sin internet · trazado GPS local '+count+' puntos');
+  }
+  function drawFallback(){const svg=$('routeSvg');svg.replaceChildren();const c=estado.circuito,p=c?c.puntos:[];const ns='http://www.w3.org/2000/svg';
+    const elem=(tag,attrs)=>{const el=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,String(v));svg.appendChild(el);return el;};
+    if(!p.length){elem('text',{x:500,y:325,'text-anchor':'middle',fill:'#667481','font-size':'27'}).textContent='Esperando señal GPS';return;}
+    const xs=p.map(x=>x.lon),ys=p.map(x=>x.lat),minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys),cx=(minX+maxX)/2,cy=(minY+maxY)/2;
+    const span=Math.max((maxX-minX)*1.3,(maxY-minY)*1.3,0.00005),px=x=>500+(x-cx)/span*780,py=y=>325-(y-cy)/span*520;
+    for(let i=1;i<p.length;i++){const prev=p[i-1],cur=p[i];elem('line',{x1:px(prev.lon),y1:py(prev.lat),x2:px(cur.lon),y2:py(cur.lat),stroke:cur.velocidad_kmh>c.resumen.limite_velocidad_kmh?'#D32F2F':'#18834C','stroke-width':11,'stroke-linecap':'round'});}
+    const last=p[p.length-1];elem('circle',{cx:px(last.lon),cy:py(last.lat),r:17,fill:'#FFF',stroke:'#222','stroke-width':5});
+    elem('text',{x:20,y:610,fill:'#667481','font-size':22}).textContent=`${last.lat.toFixed(5)}, ${last.lon.toFixed(5)}`;
+  }
+  function renderMapSegment(){const c=estado.circuito;if(!c)return;const p=c.puntos;if(!estado.map){$('mapFallback').hidden=false;drawFallback();text('mapRibbon',navigator.onLine?'Vista vectorial del recorrido':'Sin internet · vista vectorial');return;}
+    if(estado.segments.length>p.length-1||!estado.marker){renderMap();return;}
+    for(let i=estado.segments.length+1;i<p.length;i++){const a=p[i-1],b=p[i];const segment=L.polyline([[a.lat,a.lon],[b.lat,b.lon]],{color:b.velocidad_kmh>c.resumen.limite_velocidad_kmh?'#D32F2F':'#18834C',weight:6,opacity:.92}).addTo(estado.map);estado.segments.push(segment);}
+    if(p.length){const last=p[p.length-1];estado.marker.setLatLng([last.lat,last.lon]);if(estado.follow)estado.map.setView([last.lat,last.lon],17,{animate:false});}
+    updateMapBase();
+  }
+  function renderMap(){const c=estado.circuito,p=c?c.puntos:[];
+    if(!estado.map){$('mapFallback').hidden=false;drawFallback();text('mapRibbon',p.length?'Vista vectorial · '+p.length+' puntos':'Sin Leaflet · esperando posición');return;}
+    estado.segments.forEach(s=>estado.map.removeLayer(s));estado.segments=[];
+    if(estado.marker){estado.map.removeLayer(estado.marker);estado.marker=null;}
+    for(let i=1;i<p.length;i++){const a=p[i-1],b=p[i];const segment=L.polyline([[a.lat,a.lon],[b.lat,b.lon]],{color:b.velocidad_kmh>c.resumen.limite_velocidad_kmh?'#D32F2F':'#18834C',weight:6,opacity:.92}).addTo(estado.map);estado.segments.push(segment);}
+    if(p.length){const last=p[p.length-1];estado.marker=L.circleMarker([last.lat,last.lon],{radius:8,color:'#212121',weight:3,fillColor:'#fff',fillOpacity:1}).addTo(estado.map);
+      if(estado.follow){estado.map.setView([last.lat,last.lon],17,{animate:false});}else if(p.length>1){const bounds=L.latLngBounds(p.map(v=>[v.lat,v.lon]));estado.map.fitBounds(bounds.pad(.25));}}
+    updateMapBase();
+  }
+  function finishCircuit(){const c=estado.circuito;if(!c)return;if(c.puntos.length<1){toast('No hay coordenadas válidas. Espera señal GPS antes de finalizar.');return;}
+    if(!confirm('¿Finalizar y guardar el circuito? No podrás agregar más puntos a este recorrido.'))return;
+    // El backend recibe estos mismos campos durante la Etapa 3, sin alterar sus nombres.
+    const result=JSON.parse(JSON.stringify(c));const now=new Date();result.resumen.fin_iso=now.toISOString();
+    // En demo se ajusta fin si la simulación terminó antes de la última fecha artificial.
+    if(Date.parse(result.resumen.fin_iso)<Date.parse(result.puntos.at(-1).fecha_iso))result.resumen.fin_iso=result.puntos.at(-1).fecha_iso;
+    result.resumen.puntos_esperados=result.puntos.length;result.estado_local='PENDIENTE_SYNC';result.ultima_actualizacion_iso=now.toISOString();
+    const pending=readStore(STORAGE.pending,[]);if(!Array.isArray(pending)){warn('La lista de circuitos locales está dañada. No se finalizó para evitar pérdida de datos.');return;}
+    if(!pending.some(x=>x.resumen&&x.resumen.circuito_id===result.resumen.circuito_id))pending.push(result);
+    if(!writeStore(STORAGE.pending,pending)){toast('No se pudo guardar el cierre. El circuito sigue abierto.');return;}
+    stopSensors();estado.circuito=null;try{localStorage.removeItem(STORAGE.active);}catch(_){/* Ya está registrado en pendientes. */}
+    text('finalDistance',dec(result.totalMetros/1000,2)+' km');text('finalPoints',String(result.puntos.length));text('finalMaxSpeed',dec(result.velocidad_max_kmh,0)+' km/h');text('finalExcess',String(result.muestras_exceso));text('finalId',result.resumen.circuito_id);
+    show('completedScreen');updatePending();toast('Cierre local guardado; se verificará al sincronizar.');setTimeout(iniciarSyncAutomatica,1200);
+  }
+  function cancelEmptyCircuit(){const c=estado.circuito;if(!c||c.puntos.length>0)return;if(!confirm('¿Cancelar esta apertura sin puntos GPS? No se guardará como circuito terminado.'))return;stopSensors();try{localStorage.removeItem(STORAGE.active);}catch(_){warn('No fue posible eliminar la apertura del almacenamiento local.');return;}resetForNew();toast('Apertura cancelada sin puntos GPS.');}
+  function resetForNew(){estado.circuito=null;estado.gpsTime=null;estado.accuracy=null;estado.currentSpeed=0;estado.excess=false;estado.segments=[];estado.follow=true;estado.discarded=0;estado.saveTime=0;estado.demoUsed=false;$('demoTools').hidden=true;
+    $('startForm').reset();$('limite').value='30';show('setupScreen');clearWarning();updatePending();}
+  function recoverCircuit(){const active=readStore(STORAGE.active,null);if(!validCircuit(active))return;estado.circuito=active;estado.discarded=Number(active.descartadas)||0;estado.gpsTime=active.puntos.length?Date.parse(active.puntos.at(-1).fecha_iso):null;estado.accuracy=active.puntos.length?active.puntos.at(-1).precision_m:null;estado.currentSpeed=0;estado.excess=false;
+    show('runningScreen');$('resumeNotice').hidden=false;$('demoTools').hidden=active.modo!=='DEMO'||active.puntos.length>0;$('demoRibbon').hidden=active.modo!=='DEMO';text('gpsStatus','GPS pendiente de reanudación');text('savedValue','Recuperado del dispositivo');render();toast('Se recuperó un circuito anterior. Presiona Reanudar GPS.');
+  }
+  function demoPoints(){const c=estado.circuito;if(!c||c.modo!=='DEMO'||estado.demoUsed)return;estado.demoUsed=true;
+    // Coordenadas arbitrarias de demostración. No representan una ruta real de faena.
+    const speeds=[0,12,17,25,28,34,36,32,27,23,14,0],t0=Date.parse(c.resumen.inicio_iso);
+    for(let i=0;i<speeds.length;i++){const lat=-26.3000+i*.00022,lon=-69.5000+i*.00018;recibirPosicion({timestamp:t0+i*10000,coords:{latitude:lat,longitude:lon,accuracy:7,speed:speeds[i]/3.6}});}
+    persistActive(true);toast('Recorrido de demostración generado. Puedes probar el cierre local.');
+  }
+  function tick(){text('headerDate',zoneHour(new Date())+' · '+zoneDate(new Date()).split('-').reverse().join('/'));if(estado.circuito){render();const c=estado.circuito;if(c.modo!=='DEMO'&&estado.watchId!==null){const t=estado.gpsTime||Date.parse(c.resumen.inicio_iso);if(Date.now()-t>60000){estado.currentSpeed=0;estado.excess=false;render();text('gpsStatus','GPS sin lectura reciente (>60 s)');}}}}
+  function init(){estado.storageOK=hasStorage();if(!estado.storageOK){warn('Este navegador no admite guardado local. Desactiva modo privado o habilita almacenamiento antes de operar.');$('startBtn').disabled=true;}
+    if(!window.isSecureContext&&!demoQuery){warn('Abre la aplicación desde HTTPS para habilitar GPS. Un archivo abierto directamente no es una forma fiable de operación.');}
+    if(demoQuery)$('demoRibbon').hidden=false;
+    $('startForm').addEventListener('submit',startFromForm);$('finishButton').addEventListener('click',finishCircuit);
+    $('retryGpsButton').addEventListener('click',()=>{if(estado.circuito&&estado.circuito.modo!=='DEMO'){iniciarGPS();requestWake();}});
+    $('newCircuitButton').addEventListener('click',resetForNew);$('cancelEmptyButton').addEventListener('click',cancelEmptyCircuit);$('demoBtn').addEventListener('click',demoPoints);
+    $('followButton').addEventListener('click',()=>{estado.follow=!estado.follow;text('followButton',estado.follow?'◎ Seguir':'◉ Vista libre');if(estado.follow&&estado.map&&estado.circuito&&estado.circuito.puntos.length){const p=estado.circuito.puntos.at(-1);estado.map.setView([p.lat,p.lon],17);}});
+    window.addEventListener('online',updateConnection);window.addEventListener('offline',updateConnection);window.addEventListener('icv-leaflet-ready',initMap);
+    document.addEventListener('visibilitychange',()=>{if(estado.circuito){persistActive(true);if(document.visibilityState==='visible')requestWake();}});
+    window.addEventListener('pagehide',()=>{if(estado.circuito)persistActive(true);});
+    updateConnection();updatePending();initMap();recoverCircuit();tick();estado.timer=setInterval(tick,15000);conectarEtapa3();
+  }
+  /* --- ETAPA 3: sincronizacion verificable, historial y CSV --- */
+  const SYNC_STORAGE = Object.freeze({
+    config:'icv_riego_v1_sync_config',
+    tokenLocal:'icv_riego_v1_token_local',
+    tokenSesion:'icv_riego_v1_token_sesion'
+  });
+  const nube = {
+    ejecutando:false, historialSeleccionado:null, historyMap:null,historyTiles:null,
+    historyLayers:[], reintentosAutomaticos:0, autoTimer:null, origenDetalle:'setupScreen'
+  };
+  const campo = (id) => $(id);
+  function circuitosLocales() {
+    const data=readStore(STORAGE.pending,[]);
+    return Array.isArray(data)?data:[];
+  }
+  function pendiente(c) {return c.estado_local!=='SINCRONIZADO';}
+  function configNube() {
+    const c=readStore(SYNC_STORAGE.config,{});
+    const token=c.recordar
+      ? (localStorage.getItem(SYNC_STORAGE.tokenLocal)||'')
+      : (sessionStorage.getItem(SYNC_STORAGE.tokenSesion)||'');
+    return {url:String(c.url||''),token,recordar:!!c.recordar,permitirDemo:!!c.permitirDemo};
+  }
+  function cargarConfig() {
+    const c=configNube();
+    campo('syncUrl').value=c.url;
+    campo('syncToken').value=c.token;
+    campo('syncRecordar').checked=c.recordar;
+    campo('syncDemo').checked=c.permitirDemo;
+    actualizarEstadoNube();
+  }
+  function guardarConfig(event) {
+    if(event)event.preventDefault();
+    const url=campo('syncUrl').value.trim().replace(/\/+$/,'');
+    const token=campo('syncToken').value.trim();
+    if(!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url)) {
+      toast('Ingresa la URL original de Apps Script terminada en /exec.');return;
+    }
+    if(!/^[a-fA-F0-9]{64}$/.test(token)) {
+      toast('El INGEST_TOKEN debe tener 64 caracteres hexadecimales.');return;
+    }
+    try {
+      const recordar=campo('syncRecordar').checked;
+      localStorage.setItem(SYNC_STORAGE.config,JSON.stringify({url,recordar,permitirDemo:campo('syncDemo').checked}));
+      if(recordar){localStorage.setItem(SYNC_STORAGE.tokenLocal,token);sessionStorage.removeItem(SYNC_STORAGE.tokenSesion);}
+      else{sessionStorage.setItem(SYNC_STORAGE.tokenSesion,token);localStorage.removeItem(SYNC_STORAGE.tokenLocal);}
+      toast('Configuración guardada en este dispositivo.');
+      actualizarEstadoNube();
+      setTimeout(iniciarSyncAutomatica,1000);
+    } catch(err) {warn('No se pudo guardar la configuración en este navegador.');return;}
+  }
+  function actualizarEstadoNube() {
+    const lista=circuitosLocales(), pendientes=lista.filter(pendiente);
+    const confirmados=lista.length-pendientes.length;
+    text('pendingCount',pendientes.length+' circuito'+(pendientes.length===1?' pendiente':'s pendientes'));
+    text('cloudCount',String(confirmados));
+    text('historyCount',String(lista.length));
+    const cfg=configNube(), configurado=!!(cfg.url&&cfg.token);
+    text('syncInfo',nube.ejecutando?'Sincronizando y verificando respuestas...':
+      !configurado?'Configura el receptor y la credencial para sincronizar.':
+      !navigator.onLine?'Sin internet: los circuitos siguen en este dispositivo.':
+      pendientes.length?'Hay '+pendientes.length+' circuito(s) que requieren verificación.':'Sin circuitos pendientes.');
+    campo('syncAllButton').disabled=nube.ejecutando||!navigator.onLine||!configurado||!pendientes.length;
+    if(campo('completedCloudState')) text('completedCloudState',nube.ejecutando?'Verificando...':'Revisa su estado en el historial');
+  }
+  function actualizarCircuitoLocal(id,cambios) {
+    const lista=circuitosLocales();
+    const pos=lista.findIndex(x=>x.resumen&&x.resumen.circuito_id===id);
+    if(pos<0)throw new Error('El circuito ya no está en el almacenamiento local.');
+    Object.assign(lista[pos],cambios);
+    if(!writeStore(STORAGE.pending,lista))throw new Error('No se pudo actualizar la copia local.');
+    actualizarEstadoNube();
+    return lista[pos];
+  }
+  function validarCircuitoEnvio(c) {
+    if(!c||!c.resumen||!Array.isArray(c.puntos)||c.puntos.length<1||
+       !c.resumen.fin_iso||!c.resumen.circuito_id)throw new Error('Circuito incompleto, no se enviará.');
+    if(c.puntos.length!==Number(c.resumen.puntos_esperados))throw new Error('Cantidad de puntos distinta al resumen.');
+    for(let i=0;i<c.puntos.length;i++)if(c.puntos[i].indice!==i)throw new Error('Índices GPS no consecutivos.');
+  }
+  async function envioOpaco(url,token,operation) {
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),45000);
+    try {
+      // La promesa resuelta NO confirma escritura. La confirmacion llega por JSONP firmado.
+      await fetch(url,{method:'POST',mode:'no-cors',redirect:'follow',cache:'no-store',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body:JSON.stringify(Object.assign({version:1,token},operation)),signal:controller.signal});
+    } finally {clearTimeout(timer);}
+  }
+  async function firmaHmac(id,ts,token) {
+    if(!crypto||!crypto.subtle)throw new Error('Web Crypto no disponible. Necesitas HTTPS.');
+    const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(token),
+      {name:'HMAC',hash:'SHA-256'},false,['sign']);
+    const sig=await crypto.subtle.sign('HMAC',key,new TextEncoder().encode('estado|'+id+'|'+ts));
+    return Array.from(new Uint8Array(sig),b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  async function verificarEnSheets(id,cfg) {
+    const ts=Date.now(),sig=await firmaHmac(id,ts,cfg.token);
+    const cb='icvAck_'+uuid().slice(0,20);
+    const url=new URL(cfg.url);
+    for(const [key,val] of Object.entries({accion:'estado',circuito_id:id,ts:String(ts),sig,prefix:cb}))url.searchParams.set(key,val);
+    return new Promise((resolve,reject)=>{
+      const script=document.createElement('script');let terminado=false;
+      const limpieza=()=>{clearTimeout(timer);script.remove();try{delete window[cb];}catch(_){window[cb]=undefined;}};
+      const finalizar=(err,val)=>{if(terminado)return;terminado=true;limpieza();err?reject(err):resolve(val);};
+      const timer=setTimeout(()=>finalizar(new Error('Tiempo agotado esperando verificación del receptor.')),40000);
+      window[cb]=(obj)=>finalizar(null,obj);
+      script.async=true;
+      script.onerror=()=>finalizar(new Error('No pudo cargarse el acuse de recibo. Verifica la implementación del backend Etapa 3.'));
+      script.src=url.toString();
+      document.head.appendChild(script);
+    });
+  }
+  const pausa=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+  function confirmarEstado(res,c) {
+    return res&&res.ok===true&&res.encontrado===true&&res.estado==='COMPLETO'&&
+      res.circuito_id===c.resumen.circuito_id&&
+      res.puntos_esperados===c.puntos.length&&res.puntos_recibidos===c.puntos.length;
+  }
+  async function enviarCircuito(c,cfg) {
+    validarCircuitoEnvio(c);
+    const id=c.resumen.circuito_id;
+    // Idempotencia: incluso un POST previo con respuesta opaca se puede consultar.
+    let acuse=await verificarEnSheets(id,cfg);
+    if(acuse&&!acuse.ok)throw new Error(acuse.codigo||'No autorizado para consultar el receptor.');
+    if(confirmarEstado(acuse,c))return actualizarCircuitoLocal(id,{
+      estado_local:'SINCRONIZADO',sincronizado_en_iso:new Date().toISOString(),error_sync:''
+    });
+    text('syncInfo','Circuito '+id.slice(0,17)+' · enviando resumen');
+    await envioOpaco(cfg.url,cfg.token,{accion:'guardar_resumen',resumen:c.resumen});
+    for(let i=0;i<c.puntos.length;i+=400) {
+      const lote=Math.floor(i/400)+1;
+      text('syncInfo','Circuito '+id.slice(0,17)+' · lote '+lote+'/'+Math.ceil(c.puntos.length/400));
+      await envioOpaco(cfg.url,cfg.token,{accion:'guardar_lote',circuito_id:id,
+        lote_id:'L'+String(lote).padStart(4,'0'),puntos:c.puntos.slice(i,i+400)});
+    }
+    text('syncInfo','Circuito '+id.slice(0,17)+' · solicitando finalización');
+    await envioOpaco(cfg.url,cfg.token,{accion:'finalizar',circuito_id:id});
+    // El GET JSONP autenticado es el UNICO criterio de sincronizacion confirmada.
+    for(let intento=0;intento<3;intento++) {
+      await pausa(intento===0?1200:2600);
+      acuse=await verificarEnSheets(id,cfg);
+      if(acuse&&!acuse.ok)throw new Error(acuse.codigo||'Error consultando el acuse de recibo.');
+      if(confirmarEstado(acuse,c))return actualizarCircuitoLocal(id,{
+        estado_local:'SINCRONIZADO',sincronizado_en_iso:new Date().toISOString(),error_sync:''
+      });
+    }
+    throw new Error('Envío realizado, pero todavía no confirmado en Sheets. Se reintentará sin duplicar lotes.');
+  }
+  async function sincronizarPendientes(manual=false,soloId=null) {
+    if(nube.ejecutando)return;
+    if(!navigator.onLine){if(manual)toast('Sin conexión a Internet. El circuito permanece guardado.');return;}
+    const cfg=configNube();
+    if(!cfg.url||!cfg.token){if(manual)toast('Primero guarda la URL /exec y el INGEST_TOKEN.');return;}
+    let lista=circuitosLocales().filter(c=>pendiente(c)&&(!soloId||c.resumen.circuito_id===soloId));
+    lista=lista.filter(c=>c.modo!=='DEMO'||cfg.permitirDemo);
+    if(!lista.length){if(manual)toast('No hay circuitos habilitados pendientes de sincronización.');return;}
+    nube.ejecutando=true;actualizarEstadoNube();
+    let exitos=0,fallas=0;
+    try {
+      for(const c of lista) {
+        if(!navigator.onLine)break;
+        try {
+          await enviarCircuito(c,cfg);
+          exitos++;
+          actualizarHistorial();
+        } catch(err) {
+          fallas++;
+          try {actualizarCircuitoLocal(c.resumen.circuito_id,{
+            estado_local:'PENDIENTE_SYNC',error_sync:String(err.message).slice(0,240),
+            ultimo_intento_sync_iso:new Date().toISOString()
+          });} catch(errorLocal){warn(errorLocal.message);}
+          console.warn('Sincronización no confirmada:',err);
+          // Detener lote ante error global de permisos, red o backend incompatible.
+          if(/ACCESO_DENEGADO|CONSULTA_INVALIDA|No pudo cargarse|Tiempo agotado|Failed to fetch|NetworkError/i.test(String(err.message)))break;
+        }
+      }
+    } finally {
+      nube.ejecutando=false;actualizarEstadoNube();actualizarHistorial();
+      if(exitos)toast(exitos+' circuito(s) confirmados en Sheets.');
+      else if(fallas&&manual)toast('Sincronización pendiente. Revisa el error en Historial.');
+    }
+  }
+  function iniciarSyncAutomatica() {
+    // Reintento solo en primer plano con conexión; nada trabaja con navegador cerrado.
+    if(document.visibilityState==='visible')sincronizarPendientes(false).catch(console.warn);
+  }
+  function estadoTexto(c) {
+    if(c.estado_local==='SINCRONIZADO')return 'CONFIRMADO EN SHEETS';
+    if(c.modo==='DEMO'&&!configNube().permitirDemo)return 'DEMO · NO ENVIAR';
+    return c.error_sync?'PENDIENTE · '+c.error_sync:'PENDIENTE DE SINCRONIZACIÓN';
+  }
+  const node=(tag,clase,contenido)=>{
+    const n=document.createElement(tag);if(clase)n.className=clase;
+    if(contenido!==undefined)n.textContent=String(contenido);return n;
+  };
+  function mostrarHistorial() {
+    actualizarHistorial();show('historyScreen');
+  }
+  function actualizarHistorial() {
+    const lista=circuitosLocales().slice().reverse();
+    const filtro=campo('historyFilter').value;
+    const busqueda=campo('historySearch').value.trim().toLowerCase();
+    const filtrada=lista.filter(c=>{
+      const match=filtro==='todos'||(filtro==='confirmados'?c.estado_local==='SINCRONIZADO':
+        filtro==='pendientes'?pendiente(c):c.modo==='DEMO');
+      const texto=[c.resumen.circuito_id,c.resumen.equipo,c.resumen.patente,c.resumen.operador,c.resumen.fecha_operacion].join(' ').toLowerCase();
+      return match&&texto.includes(busqueda);
+    });
+    const destino=campo('historyList');destino.replaceChildren();
+    if(!filtrada.length){destino.appendChild(node('div','notice','No hay circuitos para este filtro.'));return;}
+    for(const c of filtrada) {
+      const card=node('div','history-item');
+      const title=node('div','history-top');
+      title.appendChild(node('strong','',c.resumen.equipo+' · '+c.resumen.patente));
+      const status=node('span',c.estado_local==='SINCRONIZADO'?'mini-state ok':'mini-state',c.estado_local==='SINCRONIZADO'?'Confirmado':'Pendiente');
+      title.appendChild(status);card.appendChild(title);
+      card.appendChild(node('div','minor',c.resumen.fecha_operacion+' · '+c.resumen.turno+' · '+c.puntos.length+' puntos · '+dec(c.totalMetros/1000,2)+' km'));
+      if(c.error_sync)card.appendChild(node('div','minor error-small',c.error_sync));
+      const actions=node('div','history-actions');
+      const ver=node('button','button light','◎ Ver ruta');ver.type='button';ver.onclick=()=>abrirRuta(c.resumen.circuito_id);
+      const csv=node('button','button light','↓ GPS CSV');csv.type='button';csv.onclick=()=>csvGps(c);
+      const enviar=node('button','button light','↻ Sincronizar');enviar.type='button';
+      enviar.disabled=nube.ejecutando||c.estado_local==='SINCRONIZADO'||(c.modo==='DEMO'&&!configNube().permitirDemo);
+      enviar.onclick=()=>sincronizarPendientes(true,c.resumen.circuito_id);
+      actions.append(ver,csv,enviar);card.appendChild(actions);destino.appendChild(card);
+    }
+  }
+  function abrirRuta(id) {
+    const c=circuitosLocales().find(x=>x.resumen&&x.resumen.circuito_id===id);if(!c)return;
+    nube.historialSeleccionado=id;
+    campo('historyDetail').hidden=false;
+    text('historyDetailTitle',c.resumen.equipo+' · '+c.resumen.patente);
+    text('historyDetailMeta',c.resumen.operador+' · '+c.resumen.fecha_operacion+' · '+dec(c.totalMetros/1000,2)+' km · '+c.puntos.length+' GPS');
+    text('historyDetailState',estadoTexto(c));
+    setTimeout(()=>dibujarRutaHistorica(c),100);
+    campo('historyDetail').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  function dibujarRutaHistorica(c) {
+    const puntos=c.puntos;
+    const mapDiv=campo('historyMap'),fallback=campo('historySvgFallback');
+    if(window.L&&navigator.onLine){
+      try {
+        fallback.hidden=true;mapDiv.hidden=false;
+        if(!nube.historyMap) {
+          nube.historyMap=L.map('historyMap',{zoomControl:true,preferCanvas:true}).setView([-30,-70],5);
+        }
+        const m=nube.historyMap;
+        m.invalidateSize();
+        for(const layer of nube.historyLayers)m.removeLayer(layer);
+        nube.historyLayers=[];
+        if(!nube.historyTiles){nube.historyTiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          {maxZoom:19,attribution:'&copy; OpenStreetMap colaboradores'}).addTo(m);}
+        // Agrupa tramos consecutivos del mismo color para evitar miles de capas.
+        let currentColor=null, coords=[];
+        const flush=()=>{if(coords.length>1)nube.historyLayers.push(L.polyline(coords,{color:currentColor,weight:5,opacity:.9}).addTo(m));};
+        for(let i=1;i<puntos.length;i++) {
+          const a=puntos[i-1],b=puntos[i];
+          const color=b.velocidad_kmh>c.resumen.limite_velocidad_kmh?'#D32F2F':'#18834C';
+          if(color!==currentColor){flush();currentColor=color;coords=[[a.lat,a.lon],[b.lat,b.lon]];}
+          else coords.push([b.lat,b.lon]);
+        }
+        flush();
+        if(puntos.length){
+          const a=puntos[0],b=puntos[puntos.length-1];
+          nube.historyLayers.push(L.circleMarker([a.lat,a.lon],{radius:6,color:'#18834C',fillOpacity:1}).addTo(m));
+          nube.historyLayers.push(L.circleMarker([b.lat,b.lon],{radius:7,color:'#212121',fillColor:'#fff',fillOpacity:1}).addTo(m));
+          if(puntos.length===1)m.setView([a.lat,a.lon],16);
+          else m.fitBounds(L.latLngBounds(puntos.map(p=>[p.lat,p.lon])).pad(.2));
+        }
+      }catch(err){console.warn('Error mapa histórico:',err);mapDiv.hidden=true;fallback.hidden=false;dibujarSvgHistorial(c);}
+    } else {
+      mapDiv.hidden=true;fallback.hidden=false;dibujarSvgHistorial(c);
+    }
+  }
+  function dibujarSvgHistorial(c) {
+    const svg=campo('historySvg');svg.replaceChildren();
+    const pts=c.puntos;if(!pts.length)return;
+    const ns='http://www.w3.org/2000/svg';
+    let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+    for(const p of pts){minX=Math.min(minX,p.lon);maxX=Math.max(maxX,p.lon);minY=Math.min(minY,p.lat);maxY=Math.max(maxY,p.lat);}
+    const midX=(minX+maxX)/2,midY=(minY+maxY)/2;
+    const span=Math.max((maxX-minX)*1.3,(maxY-minY)*1.3,.00005);
+    const xx=x=>500+(x-midX)/span*770,yy=y=>325-(y-midY)/span*510;
+    const normal=[],exceso=[];
+    for(let i=1;i<pts.length;i++){
+      const a=pts[i-1],b=pts[i],segment='M '+xx(a.lon).toFixed(1)+' '+yy(a.lat).toFixed(1)+
+        ' L '+xx(b.lon).toFixed(1)+' '+yy(b.lat).toFixed(1);
+      (b.velocidad_kmh>c.resumen.limite_velocidad_kmh?exceso:normal).push(segment);
+    }
+    const crear=(tag,attrs)=>{const e=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,String(v));svg.appendChild(e);return e;};
+    crear('path',{d:normal.join(' '),stroke:'#18834C','stroke-width':10,fill:'none','stroke-linecap':'round'});
+    crear('path',{d:exceso.join(' '),stroke:'#D32F2F','stroke-width':10,fill:'none','stroke-linecap':'round'});
+    const a=pts[0],b=pts.at(-1);
+    crear('circle',{cx:xx(a.lon),cy:yy(a.lat),r:13,fill:'#18834C',stroke:'#fff','stroke-width':3});
+    crear('circle',{cx:xx(b.lon),cy:yy(b.lat),r:14,fill:'#fff',stroke:'#212121','stroke-width':4});
+  }
+  function csvValor(value) {
+    if(value===null||value===undefined)return '';
+    let s=String(value);
+    // Evita la interpretación como fórmula de textos importados en Excel.
+    if(typeof value==='string'&&/^[=+@\-\t\r]/.test(s))s="'"+s;
+    return '"'+s.replace(/"/g,'""')+'"';
+  }
+  function descargarCsv(nombre,cabeceras,filas) {
+    const contenido='\uFEFF'+[cabeceras,...filas].map(row=>row.map(csvValor).join(';')).join('\r\n')+'\r\n';
+    const url=URL.createObjectURL(new Blob([contenido],{type:'text/csv;charset=utf-8'}));
+    const a=document.createElement('a');a.href=url;a.download=nombre;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+  }
+  function csvGps(c) {
+    const campos=['circuito_id','indice','fecha_iso','lat','lon','precision_m',
+      'velocidad_kmh','limite_kmh','sobre_limite','distancia_tramo_m','distancia_acumulada_km'];
+    const rows=c.puntos.map(p=>[c.resumen.circuito_id,p.indice,p.fecha_iso,p.lat,p.lon,p.precision_m,
+      p.velocidad_kmh,c.resumen.limite_velocidad_kmh,
+      p.velocidad_kmh>c.resumen.limite_velocidad_kmh?'SI':'NO',p.distancia_tramo_m,p.distancia_acumulada_km]);
+    descargarCsv('GPS_'+c.resumen.circuito_id+'.csv',campos,rows);
+  }
+  function csvResumen() {
+    const list=circuitosLocales();
+    if(!list.length){toast('No hay circuitos cerrados para exportar.');return;}
+    const fields=['circuito_id','fecha_operacion','equipo','patente','operador','turno','litros_cargados',
+      'limite_velocidad_kmh','inicio_iso','fin_iso','distancia_km','velocidad_max_kmh',
+      'muestras_exceso','litros_por_km','puntos_esperados','estado_local','sincronizado_en_iso'];
+    const rows=list.map(c=>{const r=c.resumen,km=c.totalMetros/1000;
+      return [r.circuito_id,r.fecha_operacion,r.equipo,r.patente,r.operador,r.turno,r.litros_cargados,
+        r.limite_velocidad_kmh,r.inicio_iso,r.fin_iso,round(km,3),c.velocidad_max_kmh,
+        c.muestras_exceso,km>0?round(r.litros_cargados/km,2):'',c.puntos.length,
+        c.estado_local,c.sincronizado_en_iso||''];});
+    descargarCsv('ICV_Resumen_Circuitos.csv',fields,rows);
+  }
+  function guardarRespaldoJSON() {
+    const data={exportado_en:new Date().toISOString(),version:3,circuitos:circuitosLocales(),activo:readStore(STORAGE.active,null)};
+    const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+    const a=document.createElement('a');a.href=url;a.download='ICV_Respaldo_Local_'+zoneDate(new Date())+'.json';document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+  }
+  function conectarEtapa3() {
+    cargarConfig();
+    campo('syncConfigForm').addEventListener('submit',guardarConfig);
+    campo('syncAllButton').addEventListener('click',()=>sincronizarPendientes(true));
+    campo('historyButton').addEventListener('click',mostrarHistorial);
+    campo('historyAfterClose').addEventListener('click',mostrarHistorial);
+    campo('historyBack').addEventListener('click',()=>show(estado.circuito?'runningScreen':'setupScreen'));
+    campo('historyFilter').addEventListener('change',actualizarHistorial);
+    campo('historySearch').addEventListener('input',actualizarHistorial);
+    campo('csvSummaryButton').addEventListener('click',csvResumen);
+    campo('jsonBackupButton').addEventListener('click',guardarRespaldoJSON);
+    campo('csvDetailButton').addEventListener('click',()=>{
+      const c=circuitosLocales().find(x=>x.resumen.circuito_id===nube.historialSeleccionado);
+      if(c)csvGps(c);
+    });
+    campo('syncDetailButton').addEventListener('click',()=>sincronizarPendientes(true,nube.historialSeleccionado));
+    campo('historyDetailClose').addEventListener('click',()=>{campo('historyDetail').hidden=true;nube.historialSeleccionado=null;});
+    window.addEventListener('online',()=>setTimeout(iniciarSyncAutomatica,1200));
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')iniciarSyncAutomatica();});
+    window.addEventListener('icv-leaflet-ready',()=>{
+      if(!campo('historyDetail').hidden&&nube.historialSeleccionado){
+        const c=circuitosLocales().find(x=>x.resumen.circuito_id===nube.historialSeleccionado);
+        if(c)dibujarRutaHistorica(c);
+      }
+    });
+    nube.autoTimer=setInterval(iniciarSyncAutomatica,120000);
+    actualizarEstadoNube();
+    setTimeout(iniciarSyncAutomatica,1500);
+  }
+
+  init();
+  // Hook deliberadamente solo lectura para pruebas automatizadas; no altera telemetría.
+  window.ICV_RIEGO_DIAG=Object.freeze({version:'0.3.0',getState:()=>({activo:!!estado.circuito,puntos:estado.circuito?estado.circuito.puntos.length:0,distancia_m:estado.circuito?round(estado.circuito.totalMetros,2):0,descartadas:estado.discarded,estado_local:estado.circuito?estado.circuito.estado_local:'SIN_CIRCUITO',demo:demoQuery})});
+})();
+</script>
+</body>
+</html>
