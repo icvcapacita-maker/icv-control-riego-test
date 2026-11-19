@@ -30,13 +30,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
     <img src="./icons/logo-icv.jpg" alt="ICV"><h1>Acceso de Supervisor</h1>
     <p>Control de Riego y Telemetría GPS · Salares Norte. El acceso se valida en Google Apps Script.</p>
     <label for="loginPin">Código de supervisor</label><input id="loginPin" type="password" class="pin" inputmode="numeric" pattern="[0-9]{4,8}" maxlength="8" placeholder="••••" required autocomplete="off">
-    <details><summary>Configuración del receptor · solo primera vez</summary>
-      <label for="loginUrl">URL de Apps Script (/exec)</label><input id="loginUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec" spellcheck="false" autocomplete="off">
-    </details>
     <button class="btn red" id="loginBtn" type="submit">Ingresar al panel</button>
     <button class="btn outline" id="diagnosticoBtn" type="button" style="width:100%;margin-top:9px">Comprobar conexión con el receptor</button>
     <div class="error" id="loginError" role="alert" hidden></div>
-    <p id="loginDiagnostico" class="muted" role="status" aria-live="polite">Versión 0.6 · Acceso por PIN validado por Apps Script.</p>
+    <p id="loginDiagnostico" class="muted" role="status" aria-live="polite">Versión 0.7.1 · Acceso por PIN validado por Apps Script.</p>
     <p style="margin-top:12px">PIN inicial de pruebas: <strong>solicítalo al administrador</strong>. No es una autenticación corporativa de producción.</p>
     <p><a href="./index.html">← Volver al operador</a></p>
   </form>
@@ -52,7 +49,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
     <a class="navlink" href="#mapa"><span class="nav-icon">⌖</span>Mapa de recorridos</a>
     <a class="navlink" href="#circuitos"><span class="nav-icon">▤</span>Circuitos</a>
     <a class="navlink" href="#reportes"><span class="nav-icon">↓</span>Reportes</a>
-    <a class="navlink" href="#config"><span class="nav-icon">⚙</span>Configuración</a>
     <a class="navlink" href="./index.html"><span class="nav-icon">←</span>Operador</a>
     <div class="sidebar-footer">ICV · Salares Norte<br>Consulta central por PIN y sesión temporal.</div>
   </nav>
@@ -110,26 +106,17 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
         <p class="muted" style="margin-top:12px">PDF utiliza el diálogo «Guardar como PDF» del navegador. Excel genera un .xlsx local, sin servicios de pago.</p>
       </section>
     </div>
-    <section class="panel no-print" id="config"><div class="panel-red">⚙ · Configuración técnica · supervisor</div>
-      <p class="sub">En una tablet nueva configura el receptor una sola vez para que el operador sincronice cuando exista internet. El panel del operador no muestra estos campos.</p>
-      <form id="configForm" class="filters" style="margin-top:14px">
-        <div class="f-field wide"><label for="syncUrl">URL /exec</label><input id="syncUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" required></div>
-        <div class="f-field wide"><label for="syncToken">INGEST_TOKEN (escritura de circuitos)</label><input id="syncToken" type="password" placeholder="64 caracteres" autocomplete="off" required></div>
-        <div class="f-field"><label class="check"><input type="checkbox" id="recordarToken">Recordar token en tablet</label></div>
-        <div class="f-field"><label class="check"><input type="checkbox" id="enviarDemo">Permitir DEMO</label></div>
-        <div class="f-field buttons"><button class="btn red" type="submit">Guardar configuración</button></div>
-      </form><p class="muted">Nunca publiques las credenciales en GitHub. Guardar el token en la tablet es solo para piloto y no constituye seguridad de producción.</p>
-    </section>
   </main>
 </div>
-<footer class="foot">ICV · Ingeniería Civil Vicente · Faena Salares Norte · Control de Riego & GPS v0.6 · Informes con trazabilidad de circuitos recibidos.</footer>
+<footer class="foot">ICV · Ingeniería Civil Vicente · Faena Salares Norte · Control de Riego & GPS v0.7.1 · Informes con trazabilidad de circuitos recibidos.</footer>
 </div>
+<script src="./config-publica.js"></script>
 <script>
 'use strict';
 (()=>{
  const $=id=>document.getElementById(id);
  const state={sid:'',sessionKey:'',url:'',source:'cloud',rows:[],visible:[],partial:false,map:null,tiles:null,layers:[],selected:null};
- const cfgKey='icv_riego_v1_sync_config',tokenLocal='icv_riego_v1_token_local',tokenSession='icv_riego_v1_token_sesion';
+ const cfgKey='icv_riego_v1_sync_config';
  const fmt=(v,d=0)=>new Intl.NumberFormat('es-CL',{minimumFractionDigits:d,maximumFractionDigits:d}).format(Number(v)||0);
  const num=v=>Number.isFinite(Number(v))?Number(v):0;
  const el=(tag,cls,txt)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(txt!==undefined)node.textContent=String(txt);return node};
@@ -154,26 +141,46 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
  });
  const hmac=async(msg,key)=>{const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(key),{name:'HMAC',hash:'SHA-256'},false,['sign']);return hex(new Uint8Array(await crypto.subtle.sign('HMAC',k,new TextEncoder().encode(msg))))};
  const configOld=()=>{try{return JSON.parse(localStorage.getItem(cfgKey)||'{}')}catch(_){return {}}};
- function initConfig(){const cfg=configOld();$('loginUrl').value=localStorage.getItem('icv_riego_v05_apiurl')||cfg.url||'';
-   $('syncUrl').value=cfg.url||$('loginUrl').value;$('recordarToken').checked=!!cfg.recordar;$('enviarDemo').checked=!!cfg.permitirDemo;
-   $('syncToken').value=cfg.recordar?(localStorage.getItem(tokenLocal)||''):(sessionStorage.getItem(tokenSession)||'');if(!$('loginUrl').value)$('loginUrl').closest('details').open=true;}
+ // Do NOT store or expose INGEST_TOKEN in the supervisor page. Read-only
+ // supervision is authorized using PIN + an ephemeral backend session.
+ // A public /exec URL may be defined once in config-publica.js. On an already
+ // configured tablet, reuse the operator's existing URL automatically.
+ function resolveBackendUrl(){
+   const cfg=configOld();
+   const candidates=[
+     String(window.ICV_RIEGO_CONFIG?.appsScriptUrl||''),
+     String(cfg.url||''),
+     String(localStorage.getItem('icv_riego_v05_apiurl')||'')
+   ];
+   for(const candidate of candidates){
+     const url=candidate.trim().replace(/\/+$/,'');
+     if(validUrl(url))return url;
+   }
+   return '';
+ }
+ function initConfig(){
+   state.url=resolveBackendUrl();
+   $('loginDiagnostico').textContent=state.url
+     ? 'Conexion automatica preparada. Ingresa tu PIN para continuar.'
+     : 'Receptor sin configurar. El administrador debe publicar config-publica.js o preparar primero esta tablet.';
+ }
  async function verificarBackend(){
-   const url=$('loginUrl').value.trim().replace(/\/+$/,'');
-   if(!validUrl(url))throw new Error('Ingresa la URL original /exec de Google Apps Script. Abre Configuración del receptor.');
+   const url=state.url||resolveBackendUrl();
+   if(!validUrl(url))throw new Error('El receptor no esta preconfigurado. Contacta al administrador.');
    const r=await jsonp(url,{accion:'diagnostico_publico',nocache:Date.now()},12000);
-   if(!r||!r.ok||r.version_panel!=='0.6.0')
-     throw new Error('El backend no corresponde a la v0.6. En Apps Script selecciona Nueva versión → Implementar y comprueba la URL /exec.');
+   if(!r||!r.ok||r.version_panel!=='0.7.0')
+     throw new Error('El backend no corresponde a la v0.7. En Apps Script selecciona Nueva versión → Implementar y comprueba la URL /exec.');
    if(!r.pin_configurado)throw new Error('Falta configurar el PIN en Apps Script. Ejecuta migrarDatosRiego05().');
    return r;
  }
  async function diagnosticarConexion(){
    const b=$('diagnosticoBtn');b.disabled=true;$('loginDiagnostico').textContent='Comprobando receptor…';$('loginError').hidden=true;
-   try{await verificarBackend();$('loginDiagnostico').textContent='✓ Receptor v0.6 accesible · PIN configurado. Si el 1234 falla, ejecuta diagnosticarSupervisor06() desde Apps Script.';}
-   catch(e){$('loginDiagnostico').textContent='Error de comunicación: '+e.message;$('loginUrl').closest('details').open=true;}
+   try{await verificarBackend();$('loginDiagnostico').textContent='✓ Receptor v0.7 accesible · PIN configurado. Si el 1234 falla, ejecuta diagnosticarSupervisor06() desde Apps Script.';}
+   catch(e){$('loginDiagnostico').textContent='Error de comunicación: '+e.message;}
    finally{b.disabled=false;}
  }
- async function login(e){e.preventDefault();$('loginError').hidden=true;const btn=$('loginBtn'),url=$('loginUrl').value.trim().replace(/\/+$/,'');
-   if(!validUrl(url)){$('loginError').textContent='Abre Configuración del receptor e ingresa la URL /exec correcta.';$('loginError').hidden=false;return;}
+ async function login(e){e.preventDefault();$('loginError').hidden=true;const btn=$('loginBtn'),url=state.url||resolveBackendUrl();
+   if(!validUrl(url)){$('loginError').textContent='Conexion central no disponible. Pide al administrador que prepare la configuracion de esta tablet.';$('loginError').hidden=false;return;}
    const pin=$('loginPin').value;if(!/^\d{4,8}$/.test(pin)){$('loginError').textContent='Introduce un PIN de 4 a 8 dígitos.';$('loginError').hidden=false;return;}
    btn.disabled=true;btn.textContent='Validando acceso…';const requestId=rand();
    try{
@@ -193,7 +200,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
      localStorage.setItem('icv_riego_v05_apiurl',url);$('loginPin').value='';$('loginGate').hidden=true;$('supervisorApp').hidden=false;
      status('Acceso autorizado. Consulta los circuitos desde Google Sheets.');
      await consultar();
-   }catch(err){$('loginError').textContent=err.message;$('loginError').hidden=false;$('loginUrl').closest('details').open=true;}
+   }catch(err){$('loginError').textContent=err.message;$('loginError').hidden=false;}
    finally{btn.disabled=false;btn.textContent='Ingresar al panel';}
  }
  function logout(){state.sid='';state.sessionKey='';state.rows=[];state.visible=[];state.selected=null;location.href='./supervision.html';}
@@ -204,7 +211,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
      return normal({...r,distancia_km:num(c.totalMetros)/1000,distancia_regando_km:r.distancia_regando_km??points.reduce((a,p)=>a+(p.regando?num(p.distancia_tramo_m):0),0)/1000,tiempo_regando_min:num(r.tiempo_regando_min),estado:c.estado_local==='SINCRONIZADO'?'COMPLETO':'PENDIENTE',modo:c.modo,_points:points});});
  }
  async function cloudRange(start,end,demo){const stamp=Date.now(),sig=await hmac('panel|'+start+'|'+end+'|'+demo+'|'+stamp,state.sessionKey);
-   const res=await jsonp(state.url,{accion:'panel',desde:start,hasta:end,demo,ts:stamp,sig,sid:state.sid});
+   const res=await jsonp(state.url,{accion:'panel',desde:start,hasta:end,demo,ts:stamp,sig,session_id:state.sid});
    if(!res?.ok)throw new Error(res?.mensaje||res?.codigo||'Consulta no autorizada.');return res;}
  const toUTC=s=>new Date(s+'T00:00:00Z');const fromUTC=d=>d.toISOString().slice(0,10);
  async function cloudRows(){const from=$('desde').value,to=$('hasta').value;if(!from||!to||from>to)throw new Error('Revisa el rango de fechas.');
@@ -277,7 +284,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
  }
  async function openRoute(r){$('routeTitle').textContent=r.equipo+(r.patente?' · '+r.patente:'');$('routeSub').textContent='Cargando trazado de '+r.fecha_operacion+'…';$('mapa').scrollIntoView({behavior:'smooth'});
    try{let points=[];if(state.source==='local')points=r._points||[];
-     else{const ts=Date.now(),sig=await hmac('ruta|'+r.circuito_id+'|'+ts,state.sessionKey),resp=await jsonp(state.url,{accion:'ruta',circuito_id:r.circuito_id,ts,sig,sid:state.sid});if(!resp?.ok)throw new Error(resp?.mensaje||resp?.codigo||'Ruta no disponible.');points=Array.isArray(resp.puntos)?resp.puntos:[];}
+     else{const ts=Date.now(),sig=await hmac('ruta|'+r.circuito_id+'|'+ts,state.sessionKey),resp=await jsonp(state.url,{accion:'ruta',circuito_id:r.circuito_id,ts,sig,session_id:state.sid});if(!resp?.ok)throw new Error(resp?.mensaje||resp?.codigo||'Ruta no disponible.');points=Array.isArray(resp.puntos)?resp.puntos:[];}
      state.selected={r,points};drawRoute(r,points);$('routeSub').textContent=points.length+' puntos GPS · '+fmt(r.distancia_regando_km,2)+' km regando · ruta histórica recibida.';
    }catch(e){$('routeSub').textContent='No fue posible recuperar la ruta: '+e.message;}
  }
@@ -314,25 +321,18 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
  }
  function exportXLSX(){if(!state.visible.length||state.partial)return;const blob=zipStore(xlsxFiles()),url=URL.createObjectURL(blob),a=el('a');a.href=url;a.download='ICV_Riego_'+$('desde').value+'_'+$('hasta').value+'.xlsx';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
  function pdf(){if(!state.visible.length||state.partial)return;window.print();}
- function saveConfig(e){e.preventDefault();const url=$('syncUrl').value.trim().replace(/\/+$/,''),token=$('syncToken').value.trim();
-   if(!validUrl(url)||!/^[0-9a-fA-F]{64}$/.test(token)){error('Verifica URL /exec y token de escritura de 64 caracteres.');return;}
-   try{const recordar=$('recordarToken').checked;localStorage.setItem(cfgKey,JSON.stringify({url,recordar,permitirDemo:$('enviarDemo').checked}));
-     if(recordar){localStorage.setItem(tokenLocal,token);sessionStorage.removeItem(tokenSession);}else{sessionStorage.setItem(tokenSession,token);localStorage.removeItem(tokenLocal);}
-     status('Conexión de la tablet guardada. El operador sincronizará con la app abierta en primer plano.');error('');
-   }catch(_){error('No se pudo guardar en el navegador. Comprueba almacenamiento local.');}
- }
  function init(){initConfig();const hoy=new Date();$('hasta').value=isoDate(hoy);$('desde').value=isoDate(new Date(hoy.getTime()-6*86400000));
    $('topDate').textContent=new Intl.DateTimeFormat('es-CL',{timeZone:'America/Santiago',dateStyle:'medium'}).format(hoy);
    $('loginForm').addEventListener('submit',login);$('diagnosticoBtn').addEventListener('click',diagnosticarConexion);$('logoutBtn').addEventListener('click',logout);$('sourceCloud').addEventListener('click',()=>selectSource('cloud'));$('sourceLocal').addEventListener('click',()=>selectSource('local'));$('consultarBtn').addEventListener('click',()=>consultar());
    for(const id of ['equipoFiltro','sectorFiltro','puntoFiltro','turnoFiltro'])$(id).addEventListener(id==='equipoFiltro'?'input':'change',render);
    $('incluirDemo').addEventListener('change',()=>{if(state.source==='local')render();else status('Para incluir DEMO de Sheets pulsa Consultar datos.');});
-   $('exportCsv').addEventListener('click',exportCSV);$('exportCsvQuick').addEventListener('click',exportCSV);$('exportXlsx').addEventListener('click',exportXLSX);$('exportPdf').addEventListener('click',pdf);$('clearRoute').addEventListener('click',clearMap);$('configForm').addEventListener('submit',saveConfig);
+   $('exportCsv').addEventListener('click',exportCSV);$('exportCsvQuick').addEventListener('click',exportCSV);$('exportXlsx').addEventListener('click',exportXLSX);$('exportPdf').addEventListener('click',pdf);$('clearRoute').addEventListener('click',clearMap);
    window.addEventListener('icv-leaflet-ready',()=>{if(state.selected)drawRoute(state.selected.r,state.selected.points)});
    document.querySelectorAll('.navlink[href^="#"]').forEach(a=>a.addEventListener('click',()=>{document.querySelectorAll('.navlink').forEach(x=>x.classList.remove('active'));a.classList.add('active');}));
    render();
  }
  init();
- window.ICV_SUPERVISOR_DIAG=Object.freeze({version:'0.6.0',getState:()=>({autorizado:!!state.sid,fuente:state.source,filas:state.rows.length,visibles:state.visible.length,parcial:state.partial})});
+ window.ICV_SUPERVISOR_DIAG=Object.freeze({version:'0.7.1',getState:()=>({autorizado:!!state.sid,fuente:state.source,filas:state.rows.length,visibles:state.visible.length,parcial:state.partial})});
 })();
 </script>
 </body></html>

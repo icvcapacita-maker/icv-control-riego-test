@@ -1,10 +1,10 @@
-/* Control de Riego v0.6 - Offline app shell. Nunca cachea teselas OSM,
+/* Control de Riego v0.7.1 - Offline app shell. Nunca cachea teselas OSM,
  * respuestas de Apps Script, solicitudes POST ni datos de operadores. */
 'use strict';
-const VERSION = 'icv-riego-shell-v0.6.0';
+const VERSION = 'icv-riego-shell-v0.7.1';
 const PREFIX = 'icv-riego-shell-';
 const SHELL = [
-  './', './index.html', './supervision.html', './manifest.json',
+  './', './index.html', './supervision.html', './manifest.json', './config-publica.js',
   './icons/icon-192.png', './icons/icon-512.png',
   './icons/apple-touch-icon.png', './icons/logo-icv.jpg'
 ];

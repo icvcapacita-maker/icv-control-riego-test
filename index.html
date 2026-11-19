@@ -109,6 +109,47 @@
     @media(min-width:970px){.operator-workspace{grid-template-columns:minmax(390px,.82fr) minmax(470px,1.18fr);align-items:start}.operator-workspace .fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.operator-workspace .field.wide{grid-column:span 2}.operator-workspace .card{height:auto}.operator-workspace .map-shell{height:350px}.operator-workspace .kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.operator-workspace .kpi-number{font-size:19px}.operator-workspace .kpi{padding:11px 7px}.operator-workspace .field input,.operator-workspace .field select{height:44px}.operator-workspace .card-body{padding:16px}}
     @media(min-width:1150px){.operator-workspace .map-shell{height:410px}}
     @media(max-width:969px){.operator-running #setupScreen{display:none}.operator-running .riego-toggle{min-height:100px}}
+
+    .gps-details{border:1px solid #E1E6EC;border-radius:10px;background:#F7F9FB;padding:10px 12px}
+    .gps-details summary{font-size:14px;font-weight:850;color:#344256;cursor:pointer}
+    .gps-details[open] summary{margin-bottom:10px}
+    /* v0.7 - Flujo de dos pantallas, no dos columnas de formularios */
+    .operator-workspace{grid-template-columns:minmax(0,1fr)!important}
+    #setupScreen{width:100%;max-width:1020px;margin-inline:auto}
+    .operator-running #setupScreen,.operator-running #readyPanel{display:none!important}
+    #runningScreen[hidden]{display:none!important}
+    #runningScreen .operating-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+    #runningScreen .operating-head h2{font-size:clamp(19px,2.3vw,27px)}
+    .op-status{background:#E8F6ED;color:#17683F;border:1px solid #B7DFC7;border-radius:99px;font-size:12px;font-weight:850;padding:9px 12px;white-space:nowrap}
+    #runningScreen .riego-toggle{min-height:132px;font-size:clamp(22px,3.2vw,37px);box-shadow:0 9px 22px #0002}
+    #runningScreen .riego-toggle .riego-drop{font-size:52px}
+    #runningScreen .kpi-grid{gap:9px}
+    #runningScreen .kpi{background:#fff;border:1px solid #E2E5E9}
+    #runningScreen .kpi-label{font-size:12px}
+    #runningScreen .kpi-number{font-size:clamp(19px,2.2vw,27px)}
+    #runningScreen .telemetry-card .foot-stat{padding:8px 0}
+    @media(min-width:1000px){
+      #runningScreen{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(335px,.6fr);grid-template-areas:'map control' 'map metrics' 'map telemetry';grid-template-rows:auto auto 1fr;gap:14px;align-items:start}
+      #runningScreen>.riego-primary{grid-area:control}
+      #runningScreen>.map-card{grid-area:map}
+      #runningScreen>.kpi-grid{grid-area:metrics;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+      #runningScreen>.telemetry-card{grid-area:telemetry}
+      #runningScreen .map-shell{height:min(73vh,710px);min-height:480px}
+    }
+    @media(max-width:999px){
+      #runningScreen{display:flex;flex-direction:column;gap:12px}
+      #runningScreen>.riego-primary{order:1;width:100%}
+      #runningScreen>.map-card{order:2;width:100%}
+      #runningScreen>.kpi-grid{order:3;width:100%}
+      #runningScreen>.telemetry-card{order:4;width:100%}
+      #runningScreen .map-shell{height:43vh;min-height:310px}
+    }
+    @media(max-width:500px){
+      #runningScreen .riego-toggle{min-height:104px;font-size:23px}
+      #runningScreen .riego-toggle .riego-drop{font-size:33px}
+      #runningScreen .riego-indicator{padding:9px 12px;font-size:14px}
+      #runningScreen .map-shell{height:42vh;min-height:280px}
+    }
   </style>
 </head>
 <body>
@@ -214,9 +255,9 @@
       <div class="notice warn"><span class="notice-icon">!</span><span><strong>Seguridad operacional:</strong> configura la tablet antes de conducir. No manipules el registro en movimiento.</span></div>
     </section>
 
-    <section id="runningScreen" class="spaced" hidden>
-      <div class="card riego-primary"><div class="card-body"><p class="eyebrow">OPERACIÓN EN CURSO · CONTROL DE RIEGO</p>
-        <button type="button" id="riegoToggle" class="riego-toggle inactive" aria-pressed="false"><span class="riego-drop">◉</span><span id="riegoLabel">REGANDO DETENIDO</span><span class="riego-indicator" id="riegoIndicator">OFF</span></button>
+    <section id="runningScreen" class="spaced" hidden aria-label="Pantalla 2 - seguimiento de circuito">
+      <div class="card riego-primary"><div class="card-body"><div class="operating-head"><div><p class="eyebrow">PASO 2 DE 2 · OPERACIÓN EN CURSO</p><h2>Control de regadío</h2></div><span class="op-status" id="trackingStatus">Esperando GPS</span></div>
+        <button type="button" id="riegoToggle" class="riego-toggle inactive" aria-pressed="false"><span class="riego-drop">◉</span><span id="riegoLabel">SIN REGADÍO</span><span class="riego-indicator" id="riegoIndicator">OFF</span></button>
         <div class="riego-info"><strong id="runningTitle">Circuito en curso</strong><span id="runningInfo">—</span></div>
         <div class="micro-metrics"><span>Tiempo regando: <strong id="riegoTiempo">00:00</strong></span><span>Distancia regando: <strong id="riegoDistancia">0,00 km</strong></span></div>
       </div></div>
@@ -232,18 +273,19 @@
         <div class="kpi"><div class="kpi-label">Rendimiento nominal</div><div class="kpi-number"><span id="yieldValue">—</span><span class="kpi-unit">L/km</span></div></div>
         <div class="kpi"><div class="kpi-label">Puntos GPS</div><div class="kpi-number" id="pointCountMain">0</div><div id="excessValue" hidden>0</div></div>
       </div>
-      <div class="card"><div class="card-body">
+      <div class="card map-card" id="runningMapCard"><div class="card-body">
         <div class="route-header"><div><h2>Recorrido GPS</h2><div class="section-sub">Verde: regando · Gris: en desplazamiento.</div></div><button class="button light" type="button" style="min-height:38px;padding:9px 11px;font-size:12px" id="followButton">◎ Seguir</button></div>
         <div class="map-shell" id="mapShell"><div id="map" aria-label="Mapa del recorrido"></div><div id="mapFallback" class="map-fallback" hidden><svg id="routeSvg" viewBox="0 0 1000 650" aria-label="Vista vectorial del recorrido"></svg><div class="fallback-note">Trazado vectorial disponible sin mapa base</div></div><div class="map-ribbon" id="mapRibbon">A la espera de coordenadas</div></div>
         <div class="legend"><span><i class="line"></i>Regando</span><span><i class="line transit"></i>En desplazamiento</span><span>● Posición actual</span></div>
       </div></div>
-      <div class="card"><div class="card-body"><h2>Estado de telemetría</h2>
+      <div class="card telemetry-card" id="runningTelemetryCard"><div class="card-body"><details class="gps-details"><summary>Detalles GPS y respaldo</summary>
         <div class="foot-stat"><span>Precisión GPS</span><strong id="accuracyValue">—</strong></div>
         <div class="foot-stat"><span>Última lectura GPS</span><strong id="lastReadingValue">—</strong></div>
         <div class="foot-stat"><span>Puntos válidos almacenados</span><strong id="pointCountValue">0</strong></div>
         <div class="foot-stat"><span>Lecturas descartadas</span><strong id="rejectedValue">0</strong></div>
         <div class="foot-stat"><span>Respaldo local</span><strong id="savedValue">Esperando</strong></div>
         <div class="foot-stat"><span>Pantalla activa (Wake Lock)</span><strong id="wakeValue">—</strong></div>
+        </details>
         <div style="height:12px"></div>
         <div class="notice warn" id="resumeNotice" hidden><span class="notice-icon">!</span><span>El circuito fue recuperado del almacenamiento local. Presiona <strong>Reanudar GPS</strong> para continuar registrando el recorrido.</span></div>
         <div class="btn-stack" style="margin-top:14px">
@@ -301,7 +343,7 @@
       </div></div>
     </section>
   </main>
-  <footer class="footer">ICV · Salares Norte · Control de Riego GPS v0.6 · Control de riego en tablet · Configurar la app con el vehículo detenido.</footer>
+  <footer class="footer">ICV · Salares Norte · Control de Riego GPS v0.7 · Control de riego en tablet · Configurar la app con el vehículo detenido.</footer>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
 <script>
@@ -335,7 +377,7 @@
   function updateConnection(){const online=navigator.onLine,chip=$('connectionChip');chip.className='chip '+(online?'good':'warn');text('connectionText',online?'Con red · respaldo local':'Sin red · respaldo local');if(estado.circuito)updateMapBase();actualizarEstadoNube();}
   function show(screen){
     $('operatorWorkspace').hidden=screen==='completedScreen'||screen==='historyScreen';
-    $('setupScreen').hidden=false;
+    $('setupScreen').hidden=screen!=='setupScreen';
     $('runningScreen').hidden=screen!=='runningScreen';
     $('readyPanel').hidden=screen!=='setupScreen';
     $('completedScreen').hidden=screen!=='completedScreen';
@@ -345,6 +387,7 @@
     for(const ctrl of $('startForm').querySelectorAll('input,select'))ctrl.disabled=active;
     document.body.classList.toggle('operator-running',active);
     if(active){setTimeout(()=>{if(estado.map)estado.map.invalidateSize();},160);renderMap();}
+    if(['setupScreen','runningScreen','completedScreen'].includes(screen)){try{window.scrollTo({top:0,behavior:'instant'});}catch(_){window.scrollTo(0,0);}}
   }
   function updatePending(){actualizarEstadoNube();}
   function persistActive(force=false){if(!estado.circuito)return false;const now=Date.now();if(!force&&now-estado.saveTime<CFG.autoSaveMs)return true;const ok=writeStore(STORAGE.active,estado.circuito);if(ok){estado.saveTime=now;text('savedValue',zoneHour(new Date())+' · local');}return ok;}
@@ -446,6 +489,7 @@
     render();
   }
   function render(){const c=estado.circuito;if(!c)return;const r=c.resumen,dist=c.totalMetros/1000;
+    text('trackingStatus',c.modo==='DEMO'?'GPS SIMULADO':estado.gpsTime?'GPS · '+(estado.accuracy===null?'ubicado':dec(estado.accuracy,0)+' m de precisión'):'Esperando GPS');
     text('runningTitle',r.equipo+(r.patente?' · '+r.patente:''));text('runningInfo',r.punto_carguio+(r.punto_carguio==='OTROS'?' · '+r.punto_carguio_otro:'')+' · '+dec(r.litros_cargados,0)+' L · '+dec(r.supresor_kg||0,1)+' kg supresor');
     const minutos=calcularMinutosRiego(c);text('riegoTiempo',formatDuration(minutos*60000));text('riegoDistancia',dec(distanciaRegando(c),2)+' km');text('pointCountMain',String(c.puntos.length));actualizarBotonRiego();
     text('speedNumber',String(Math.round(estado.currentSpeed)));text('speedLimit',dec(r.limite_velocidad_kmh,0)+' km/h');
@@ -467,7 +511,7 @@
   function distanciaRegando(c){return (c.puntos||[]).reduce((s,p)=>s+(p.regando===true?Number(p.distancia_tramo_m)||0:0),0)/1000;}
   function actualizarBotonRiego(){const c=estado.circuito;const activo=!!(c&&c.regando);
     const b=$('riegoToggle');b.classList.toggle('active',activo);b.classList.toggle('inactive',!activo);
-    b.setAttribute('aria-pressed',String(activo));text('riegoLabel',activo?'REGANDO ACTIVO':'REGANDO DETENIDO');text('riegoIndicator',activo?'ON':'OFF');
+    b.setAttribute('aria-pressed',String(activo));text('riegoLabel',activo?'REGANDO ACTIVO':'SIN REGADÍO');text('riegoIndicator',activo?'ON':'OFF');
   }
   function alternarRiego(){const c=estado.circuito;if(!c)return;
     if(!Array.isArray(c.eventos_riego))c.eventos_riego=[];
@@ -932,7 +976,7 @@
 
   init();
   // Hook deliberadamente solo lectura para pruebas automatizadas; no altera telemetría.
-  window.ICV_RIEGO_DIAG=Object.freeze({version:'0.6.0',getState:()=>({activo:!!estado.circuito,puntos:estado.circuito?estado.circuito.puntos.length:0,regando:estado.circuito?estado.circuito.regando:false,tiempo_regando_min:estado.circuito?calcularMinutosRiego(estado.circuito):0,distancia_regando_km:estado.circuito?distanciaRegando(estado.circuito):0,distancia_m:estado.circuito?round(estado.circuito.totalMetros,2):0,descartadas:estado.discarded,estado_local:estado.circuito?estado.circuito.estado_local:'SIN_CIRCUITO',demo:demoQuery})});
+  window.ICV_RIEGO_DIAG=Object.freeze({version:'0.7.0',getState:()=>({activo:!!estado.circuito,puntos:estado.circuito?estado.circuito.puntos.length:0,regando:estado.circuito?estado.circuito.regando:false,tiempo_regando_min:estado.circuito?calcularMinutosRiego(estado.circuito):0,distancia_regando_km:estado.circuito?distanciaRegando(estado.circuito):0,distancia_m:estado.circuito?round(estado.circuito.totalMetros,2):0,descartadas:estado.discarded,estado_local:estado.circuito?estado.circuito.estado_local:'SIN_CIRCUITO',demo:demoQuery})});
 })();
 </script>
 <script>

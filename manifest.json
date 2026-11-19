@@ -1,7 +1,7 @@
 {
   "name": "ICV · Control de Riego y Telemetría GPS",
   "short_name": "ICV Riego GPS",
-  "description": "Registro local de circuitos GPS de camiones aljibe, sincronización y supervisión. Versión piloto tablet.",
+  "description": "Registro GPS y riego en tablet, supervisión con PIN y receptor configurado automáticamente.",
   "id": "./index.html",
   "start_url": "./index.html",
   "scope": "./",
@@ -11,7 +11,17 @@
   "theme_color": "#D32F2F",
   "lang": "es-CL",
   "icons": [
-    {"src":"./icons/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
-    {"src":"./icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }
