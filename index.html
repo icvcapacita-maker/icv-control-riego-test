@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#D32F2F">
   <meta name="color-scheme" content="light">
-  <meta name="description" content="Registro, historial y sincronización verificable de recorridos GPS para camiones aljibe.">
+  <meta name="description" content="Control de regadío, abastecimiento de piscinas y perforadoras, y rutas GPS en faena mina.">
   <title>ICV | Control de Riego y Telemetría GPS</title>
   <link rel="manifest" href="./manifest.json">
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
@@ -110,6 +110,29 @@
     @media(min-width:1150px){.operator-workspace .map-shell{height:410px}}
     @media(max-width:969px){.operator-running #setupScreen{display:none}.operator-running .riego-toggle{min-height:100px}}
 
+    /* v0.8: entrega de agua a piscinas y perforadoras desde la pantalla de riego */
+    .entregas-card .card-body{padding:16px}
+    .entregas-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+    .entrega-action{border:2px solid #DCE2E8;border-radius:14px;background:#F7F9FB;color:#26313D;min-height:86px;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;font-size:clamp(13px,1.5vw,18px);font-weight:900;line-height:1.25;text-align:center}
+    .entrega-action:focus-visible,.entrega-action:hover{border-color:#D32F2F;background:#FFF1F1}
+    .entregas-totales{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+    .entregas-totales>div{padding:10px;background:#F4F6F8;border-radius:10px;border:1px solid #E7EAF0}
+    .entregas-totales small{color:#596673;font-size:11px;display:block;font-weight:750}
+    .entregas-totales strong{display:block;font-size:clamp(16px,1.6vw,23px);margin-top:4px;font-variant-numeric:tabular-nums}
+    .entrega-log{display:grid;gap:6px;margin-top:12px;font-size:12px}
+    .entrega-log-row{background:#FCFCFD;border:1px solid #E9ECF0;border-radius:8px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .entrega-log-row small{color:#5D6A77}
+    .entrega-log-row strong{font-variant-numeric:tabular-nums}
+    .entrega-note{color:#67737E;font-size:11px;line-height:1.5;margin:6px 0 0}
+    .modal-overlay{position:fixed;inset:0;z-index:9995;background:rgba(20,25,32,.72);display:grid;place-items:center;padding:16px;overflow-y:auto}
+    .modal-overlay[hidden]{display:none!important}
+    .entrega-modal{background:#fff;border-radius:17px;width:min(510px,100%);max-height:min(94vh,850px);overflow-y:auto;padding:22px;box-shadow:0 20px 65px #0005}
+    .entrega-modal h2{font-size:21px}.entrega-modal .field{margin:15px 0}
+    .entrega-modal .modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}
+    .entrega-modal .modal-actions button{min-height:56px}
+    .entrega-modal .modal-badge{display:inline-block;padding:6px 9px;border-radius:8px;background:#FFF1F1;color:#A91D24;font-size:11px;font-weight:900;margin-bottom:8px}
+    .entrega-undo{border:1px solid #E7B9B9;color:#9F2525;background:white;border-radius:8px;padding:8px 12px;min-height:38px;font-size:11px;font-weight:750;margin-top:9px}
+    @media(max-width:560px){.entregas-action-grid{grid-template-columns:1fr}.entrega-action{min-height:66px}.entrega-modal{padding:17px}}
     .gps-details{border:1px solid #E1E6EC;border-radius:10px;background:#F7F9FB;padding:10px 12px}
     .gps-details summary{font-size:14px;font-weight:850;color:#344256;cursor:pointer}
     .gps-details[open] summary{margin-bottom:10px}
@@ -129,8 +152,9 @@
     #runningScreen .kpi-number{font-size:clamp(19px,2.2vw,27px)}
     #runningScreen .telemetry-card .foot-stat{padding:8px 0}
     @media(min-width:1000px){
-      #runningScreen{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(335px,.6fr);grid-template-areas:'map control' 'map metrics' 'map telemetry';grid-template-rows:auto auto 1fr;gap:14px;align-items:start}
+      #runningScreen{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(335px,.6fr);grid-template-areas:'map control' 'map deliveries' 'map metrics' 'map telemetry';grid-template-rows:auto auto auto 1fr;gap:14px;align-items:start}
       #runningScreen>.riego-primary{grid-area:control}
+      #runningScreen>.entregas-card{grid-area:deliveries}
       #runningScreen>.map-card{grid-area:map}
       #runningScreen>.kpi-grid{grid-area:metrics;grid-template-columns:repeat(2,minmax(0,1fr))!important}
       #runningScreen>.telemetry-card{grid-area:telemetry}
@@ -139,9 +163,10 @@
     @media(max-width:999px){
       #runningScreen{display:flex;flex-direction:column;gap:12px}
       #runningScreen>.riego-primary{order:1;width:100%}
-      #runningScreen>.map-card{order:2;width:100%}
-      #runningScreen>.kpi-grid{order:3;width:100%}
-      #runningScreen>.telemetry-card{order:4;width:100%}
+      #runningScreen>.entregas-card{order:2;width:100%}
+      #runningScreen>.map-card{order:3;width:100%}
+      #runningScreen>.kpi-grid{order:4;width:100%}
+      #runningScreen>.telemetry-card{order:5;width:100%}
       #runningScreen .map-shell{height:43vh;min-height:310px}
     }
     @media(max-width:500px){
@@ -173,7 +198,15 @@
         <div class="section-head"><div><p class="eyebrow">OPERACIÓN · CAMIONES ALJIBE</p><h2>Apertura de circuito</h2><div class="section-sub">Ingresa los datos antes de iniciar el recorrido.</div></div><span class="section-n">01</span></div>
         <form id="startForm" novalidate>
           <div class="fields">
-            <div class="field"><label for="equipo">Equipo / Camión aljibe *</label><input id="equipo" name="equipo" maxlength="80" autocomplete="off" required placeholder="Ej.: Aljibe 10"></div>
+            <div class="field"><label for="equipo">Camión aljibe · N.º Mina *</label>
+              <select id="equipo" name="equipo" required aria-describedby="equipoIcvAyuda">
+                <option value="">Seleccionar aljibe</option>
+                <option value="CA-08 · ICV 910" data-mina="CA-08" data-icv="910">CA-08 · ICV 910</option>
+                <option value="CA-09 · ICV 461" data-mina="CA-09" data-icv="461">CA-09 · ICV 461</option>
+                <option value="CA-10 · ICV 459" data-mina="CA-10" data-icv="459">CA-10 · ICV 459</option>
+                <option value="CA-11 · ICV 592" data-mina="CA-11" data-icv="592">CA-11 · ICV 592</option>
+                <option value="CA-12 · ICV 1009" data-mina="CA-12" data-icv="1009">CA-12 · ICV 1009</option>
+              </select><div id="equipoIcvAyuda" class="hint">N.º ICV asociado: <strong id="icvAsociado">—</strong> · selección sin digitación manual</div></div>
             
             <div class="field wide"><label for="operador">Nombre del operador *</label><input id="operador" name="operador" maxlength="120" autocomplete="name" required placeholder="Nombre y apellido"></div>
             <div class="field"><label for="turno">Turno *</label><select id="turno" name="turno" required><option value="DIA">Día (08:00–20:00)</option><option value="NOCHE">Noche (20:00–08:00)</option></select></div>
@@ -248,6 +281,7 @@
         <div class="sync-actions">
           <button type="button" class="button light" id="historyButton">◎ Abrir historial</button>
           <button type="button" class="button light" id="csvSummaryButton">↓ Resumen CSV</button>
+          <button type="button" class="button light" id="csvEntregasButton">↓ Entregas CSV</button>
           <button type="button" class="button light" id="jsonBackupButton">↓ Respaldo JSON</button>
         </div>
       </div></div>
@@ -260,6 +294,21 @@
         <button type="button" id="riegoToggle" class="riego-toggle inactive" aria-pressed="false"><span class="riego-drop">◉</span><span id="riegoLabel">SIN REGADÍO</span><span class="riego-indicator" id="riegoIndicator">OFF</span></button>
         <div class="riego-info"><strong id="runningTitle">Circuito en curso</strong><span id="runningInfo">—</span></div>
         <div class="micro-metrics"><span>Tiempo regando: <strong id="riegoTiempo">00:00</strong></span><span>Distancia regando: <strong id="riegoDistancia">0,00 km</strong></span></div>
+      </div></div>
+      <div class="card entregas-card" id="entregasCard"><div class="card-body">
+        <div class="route-header"><div><p class="eyebrow">ABASTECIMIENTO DURANTE EL RECORRIDO</p><h2>Carguío a otros equipos / instalaciones</h2><div class="section-sub">Registra cada entrega. Puedes anotar varias dentro del mismo circuito.</div></div></div>
+        <div class="entregas-action-grid">
+          <button type="button" class="entrega-action" id="btnCargarPiscina">▣ &nbsp; Carguío de piscina</button>
+          <button type="button" class="entrega-action" id="btnCargarPerforadora">⚒ &nbsp; Carguío de perforadora</button>
+        </div>
+        <div class="entregas-totales" aria-live="polite">
+          <div><small>A piscinas</small><strong id="totalPiscinas">0 L</strong></div>
+          <div><small>A perforadoras</small><strong id="totalPerforadoras">0 L</strong></div>
+          <div><small>Entregas</small><strong id="cantEntregas">0</strong></div>
+        </div>
+        <div id="listaEntregas" class="entrega-log" aria-live="polite"></div>
+        <button id="deshacerEntrega" class="entrega-undo" type="button" hidden>↶ Anular última entrega</button>
+        <p class="entrega-note">Las entregas a piscinas y perforadoras se contabilizan por separado del riego de pistas. Registra los datos solo con el vehículo detenido.</p>
       </div></div>
       <div class="alert" id="speedAlert" role="alert" hidden style="display:none!important"><span style="font-size:24px">⚠</span><div>EXCESO DE VELOCIDAD<div style="font-size:11px;font-weight:600;margin-top:2px" id="alertDetail">Reduzca la velocidad según el límite autorizado.</div></div></div>
       <div class="speed-panel" id="speedPanel" hidden>
@@ -298,6 +347,18 @@
       </div></div>
     </section>
 
+    <div id="entregaOverlay" class="modal-overlay" role="presentation" hidden>
+      <form class="entrega-modal" id="formEntrega" role="dialog" aria-modal="true" aria-labelledby="entregaTitulo">
+        <div class="modal-badge">REGISTRO DE ENTREGA DE AGUA</div>
+        <h2 id="entregaTitulo">Carguío</h2>
+        <p class="section-sub">Realiza este registro únicamente cuando el equipo esté detenido.</p>
+        <div class="field" id="referenciaEntregaBox"><label for="referenciaEntrega" id="labelReferenciaEntrega">Número / Identificador</label><input id="referenciaEntrega" type="text" maxlength="70" autocomplete="off" placeholder=""></div>
+        <div class="field"><label for="litrosEntrega">Litros entregados *</label><div class="unit-wrap"><input id="litrosEntrega" type="number" inputmode="numeric" min="1" max="100000" step="1" required placeholder="Ej.: 2000"><span class="unit">litros</span></div></div>
+        <div class="notice warn" id="entregaRiegoAviso" hidden><span class="notice-icon">!</span><span>El riego está activado. Al confirmar la entrega, se marcará SIN REGADÍO automáticamente.</span></div>
+        <div class="notice" style="margin-top:10px"><span class="notice-icon">ⓘ</span><span>La hora se guarda automáticamente y se agregará la última ubicación GPS válida, si está disponible.</span></div>
+        <div class="modal-actions"><button type="button" class="button light" id="cancelarEntrega">Cancelar</button><button type="submit" class="button primary" id="guardarEntrega">✓ Registrar entrega</button></div>
+      </form>
+    </div>
     <section id="readyPanel" class="card ready-panel"><div class="card-body"><p class="eyebrow">CENTRO DE OPERACIONES</p><h2>Mapa y control de riego</h2>
       <div class="ready-map"><div class="ready-map-symbol">⌖</div><h3>GPS preparado</h3><p>Inicia el circuito para visualizar el mapa y activar el control «REGANDO».</p></div>
       <div class="ready-metrics"><span>● Carguío TK-41 / TK-42 / Otros</span><span>● Supresor en kg</span><span>● Registro offline</span></div></div></section>
@@ -313,7 +374,7 @@
           <div class="kpi"><div class="kpi-label">Tiempo regando</div><div class="kpi-number" id="finalRiegoTiempo">00:00</div><div id="finalExcess" hidden>0</div></div>
         </div>
         <div style="height:12px"></div><div class="foot-stat"><span>ID de circuito</span><strong style="font-size:11px;overflow-wrap:anywhere" id="finalId">—</strong></div>
-        <div class="foot-stat"><span>Estado nube</span><strong id="completedCloudState">PENDIENTE</strong></div>
+        <div class="foot-stat"><span>Estado nube</span><strong id="completedCloudState">PENDIENTE</strong></div><div class="foot-stat"><span>A piscinas</span><strong id="finalPiscinas">0 L</strong></div><div class="foot-stat"><span>A perforadoras</span><strong id="finalPerforadoras">0 L</strong></div>
         <div style="height:16px"></div><div class="btn-stack">
           <button class="button primary full" id="newCircuitButton">＋ &nbsp; Registrar una nueva carga</button>
           <button class="button light full" id="historyAfterClose" hidden>Historial (solo supervisor)</button>
@@ -343,7 +404,7 @@
       </div></div>
     </section>
   </main>
-  <footer class="footer">ICV · Salares Norte · Control de Riego GPS v0.7 · Control de riego en tablet · Configurar la app con el vehículo detenido.</footer>
+  <footer class="footer">ICV · Salares Norte · Control de Riego GPS v0.8.1 · Control de riego en tablet · Configurar la app con el vehículo detenido.</footer>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
 <script>
@@ -352,6 +413,14 @@
   /* ETAPA 3: registro local; sincronizacion solo cuando se configura el receptor. */
   const STORAGE = Object.freeze({active:'icv_riego_v1_circuito_activo', pending:'icv_riego_v1_circuitos_pendientes'});
   const CFG = Object.freeze({maxAccuracyM:60, maxJumpM:200, minSpeedKmh:2, minMovementM:7, maxSpeedKmh:120, fixedLimitKmh:50, stationaryKeepaliveMs:90000, autoSaveMs:5000, maxPoints:10000});
+  // ÚNICA capa base: imagen satelital Sentinel-2 2016 (CC BY 4.0), no actualizada.
+  // Para ortofotos recientes: integrar únicamente un proveedor con licencia empresarial.
+  // El GPS y las rutas continúan operando si el servidor externo de teselas no responde.
+  const SAT_MAP = Object.freeze({
+    url: 'https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.jpg',
+    attribution: 'EOxCloudless <a href="https://cloudless.eox.at" target="_blank" rel="noopener">EOX</a> (Copernicus Sentinel 2016, CC BY 4.0)',
+    maxNativeZoom: 14
+  });
   const demoQuery = new URLSearchParams(location.search).get('demo') === '1';
   const $ = id => document.getElementById(id);
   const estado = {circuito:null,watchId:null,wakeLock:null,map:null,osmTiles:null,marker:null,segments:[],follow:true,saveTime:0,gpsTime:null,accuracy:null,currentSpeed:0,discarded:0,excess:false,storageOK:false,gpsError:null,timer:null,demoUsed:false};
@@ -395,8 +464,8 @@
   function createCircuit(form){const now=new Date(),isDemo=demoQuery;const inicio=new Date(isDemo?now.getTime()-120000:now.getTime());const id=(isDemo?'TEST_':'CR_')+zoneDate(now).replace(/-/g,'')+'_'+uuid().slice(0,23);
     return {
       protocolo:1,modo:isDemo?'DEMO':'REAL',estado_local:'EN_CURSO',
-      resumen:{circuito_id:id,fecha_operacion:zoneDate(now),equipo:form.equipo,patente:'',operador:form.operador,turno:form.turno,litros_cargados:form.litros,limite_velocidad_kmh:CFG.fixedLimitKmh,inicio_iso:inicio.toISOString(),fin_iso:null,puntos_esperados:0,punto_carguio:form.punto,punto_carguio_otro:form.otro,supresor_kg:form.supresor,area_sector:'Sin clasificar',eventos_riego:[],flujometro_aplica:form.flujo.aplica,flujometro_id:form.flujo.id,flujometro_lectura_inicio:form.flujo.inicio,flujometro_lectura_termino:form.flujo.fin,flujometro_unidad:form.flujo.unidad,flujometro_volumen_l:form.flujo.volumen},
-      puntos:[],regando:false,eventos_riego:[],totalMetros:0,velocidad_max_kmh:0,muestras_exceso:0,descartadas:0,ultima_actualizacion_iso:now.toISOString()
+      resumen:{circuito_id:id,fecha_operacion:zoneDate(now),equipo:form.equipo,patente:'',operador:form.operador,turno:form.turno,litros_cargados:form.litros,limite_velocidad_kmh:CFG.fixedLimitKmh,inicio_iso:inicio.toISOString(),fin_iso:null,puntos_esperados:0,punto_carguio:form.punto,punto_carguio_otro:form.otro,supresor_kg:form.supresor,area_sector:'Sin clasificar',eventos_riego:[],entregas_agua:[],flujometro_aplica:form.flujo.aplica,flujometro_id:form.flujo.id,flujometro_lectura_inicio:form.flujo.inicio,flujometro_lectura_termino:form.flujo.fin,flujometro_unidad:form.flujo.unidad,flujometro_volumen_l:form.flujo.volumen},
+      puntos:[],regando:false,eventos_riego:[],entregas_agua:[],totalMetros:0,velocidad_max_kmh:0,muestras_exceso:0,descartadas:0,ultima_actualizacion_iso:now.toISOString()
     };
   }
   let aguaManualAntesFlujo='';
@@ -428,6 +497,7 @@
     const flujo=datosFlujometro();
     if(!flujo.valido){toast(flujo.mensaje);return;}
     const form={equipo:$('equipo').value.trim(),operador:$('operador').value.trim(),turno:$('turno').value,litros:flujo.aplica?flujo.volumen:Number($('litros').value),punto:document.querySelector('input[name="puntoCarguio"]:checked').value,otro:$('otroCarguio').value.trim(),supresor:$('supresorCheck').checked?Number($('supresorCantidad').value):0,flujo};
+    if(!['CA-08 · ICV 910','CA-09 · ICV 461','CA-10 · ICV 459','CA-11 · ICV 592','CA-12 · ICV 1009'].includes(form.equipo)){toast('Selecciona un camión aljibe del listado autorizado.');return;}
     if(!safeInput(form.equipo)||form.equipo.length>80||!safeInput(form.operador)||form.operador.length>120){toast('Completa equipo y operador sin caracteres inválidos.');return;}
     if(!['DIA','NOCHE'].includes(form.turno)||!Number.isInteger(form.litros)||form.litros<1||form.litros>100000){toast('Revisa turno y agua cargada (1–100.000 litros).');return;}
     if(form.punto==='OTROS'&&!safeInput(form.otro)){toast('Especifica el punto de carguío.');return;}
@@ -488,6 +558,87 @@
     }
     render();
   }
+
+  /* v0.8: eventos de entrega de agua a piscinas y perforadoras.
+   * No se mezclan con litros cargados ni se asumen como agua aplicada en pistas.
+   * La lista forma parte del circuito local y se sincroniza con el resumen.
+   */
+  let tipoEntregaActual='',guardandoEntrega=false;
+  function entregasCircuito(c){return c&&Array.isArray(c.entregas_agua)?c.entregas_agua:[];}
+  function sumaEntregas(c,tipo){return entregasCircuito(c).filter(x=>x.tipo===tipo).reduce((a,x)=>a+(Number(x.litros)||0),0);}
+  function renderEntregas(){
+    const c=estado.circuito;
+    const list=entregasCircuito(c),p=sumaEntregas(c,'PISCINA'),d=sumaEntregas(c,'PERFORADORA');
+    text('totalPiscinas',dec(p,0)+' L');text('totalPerforadoras',dec(d,0)+' L');text('cantEntregas',String(list.length));
+    const target=$('listaEntregas');target.replaceChildren();
+    for(const e of list.slice(-3).reverse()){
+      const row=document.createElement('div');row.className='entrega-log-row';
+      const label=document.createElement('span');label.textContent=(e.tipo==='PISCINA'?'Piscina':'Perforadora')+(e.identificador?' · '+e.identificador:'');
+      const number=document.createElement('strong');number.textContent=dec(e.litros,0)+' L';
+      row.append(label,number);target.appendChild(row);
+    }
+    $('deshacerEntrega').hidden=!list.length;
+  }
+  function abrirEntrega(tipo){
+    const c=estado.circuito;if(!c)return;
+    if(!['PISCINA','PERFORADORA'].includes(tipo))return;
+    if(entregasCircuito(c).length>=100){toast('Máximo 100 entregas por circuito; finaliza y abre uno nuevo.');return;}
+    tipoEntregaActual=tipo;
+    $('formEntrega').reset();
+    const perforadora=tipo==='PERFORADORA';
+    text('entregaTitulo',perforadora?'Carguío de perforadora':'Carguío de piscina');
+    text('labelReferenciaEntrega',perforadora?'N.º de perforadora *':'Identificador de piscina (opcional)');
+    $('referenciaEntrega').required=perforadora;
+    $('referenciaEntrega').placeholder=perforadora?'Ej.: PV-271 / Perforadora 01':'Ej.: Piscina Norte';
+    $('entregaRiegoAviso').hidden=!c.regando;
+    $('entregaOverlay').hidden=false;
+    $('referenciaEntrega').focus();
+  }
+  function cerrarEntrega(){if(guardandoEntrega)return;$('entregaOverlay').hidden=true;tipoEntregaActual='';}
+  function registrarEntrega(e){
+    e.preventDefault();
+    if(guardandoEntrega)return;
+    const c=estado.circuito;if(!c)return;
+    const tipo=tipoEntregaActual;
+    if(!['PISCINA','PERFORADORA'].includes(tipo))return;
+    const id=$('referenciaEntrega').value.trim(),litros=Number($('litrosEntrega').value);
+    if(tipo==='PERFORADORA'&&(!safeInput(id)||id.length>70)){
+      toast('Ingresa el número o identificador de la perforadora.');$('referenciaEntrega').focus();return;
+    }
+    if(id&&(!safeInput(id)||id.length>70)){toast('Revisa el identificador ingresado.');return;}
+    if(!Number.isInteger(litros)||litros<1||litros>100000){toast('Ingresa litros enteros entre 1 y 100.000.');return;}
+    const totalAnterior=sumaEntregas(c,'PISCINA')+sumaEntregas(c,'PERFORADORA');
+    if(totalAnterior+litros>Number(c.resumen.litros_cargados)){
+      toast('El total entregado supera el agua cargada en este circuito. Revisa los litros.');return;
+    }
+    if(c.regando&&!confirm('¿Detener regadío y registrar este carguío?'))return;
+    const backup={entregas:entregasCircuito(c).slice(),eventos:(c.eventos_riego||[]).slice(),regando:c.regando};
+    guardandoEntrega=true;
+    try{
+      const ahora=new Date().toISOString();
+      if(c.regando){c.regando=false;c.eventos_riego.push({fecha_iso:ahora,regando:false});}
+      const ultimo=c.puntos.at(-1),fresco=ultimo&&Math.abs(Date.now()-Date.parse(ultimo.fecha_iso))<=120000;
+      const ev={entrega_id:'EA_'+uuid().slice(0,25),tipo,identificador:id,litros,
+        fecha_iso:ahora,lat:fresco?Number(ultimo.lat):null,lon:fresco?Number(ultimo.lon):null,
+        precision_m:fresco?Number(ultimo.precision_m):null};
+      if(!Array.isArray(c.entregas_agua))c.entregas_agua=[];
+      c.entregas_agua.push(ev);c.resumen.entregas_agua=c.entregas_agua;c.ultima_actualizacion_iso=ahora;
+      if(!persistActive(true)){
+        c.entregas_agua=backup.entregas;c.resumen.entregas_agua=c.entregas_agua;c.eventos_riego=backup.eventos;c.regando=backup.regando;return;
+      }
+      $('entregaOverlay').hidden=true;tipoEntregaActual='';render();
+      toast('Entrega registrada: '+dec(litros,0)+' L · '+(tipo==='PISCINA'?'Piscina':'Perforadora '+id));
+    }finally{guardandoEntrega=false;}
+  }
+  function anularUltimaEntrega(){
+    const c=estado.circuito;if(!c||!entregasCircuito(c).length)return;
+    const u=c.entregas_agua.at(-1);
+    if(!confirm('¿Anular la última entrega de '+dec(u.litros,0)+' L?'))return;
+    c.entregas_agua.pop();c.resumen.entregas_agua=c.entregas_agua;
+    if(!persistActive(true)){c.entregas_agua.push(u);c.resumen.entregas_agua=c.entregas_agua;return;}
+    render();toast('Última entrega anulada.');
+  }
+
   function render(){const c=estado.circuito;if(!c)return;const r=c.resumen,dist=c.totalMetros/1000;
     text('trackingStatus',c.modo==='DEMO'?'GPS SIMULADO':estado.gpsTime?'GPS · '+(estado.accuracy===null?'ubicado':dec(estado.accuracy,0)+' m de precisión'):'Esperando GPS');
     text('runningTitle',r.equipo+(r.patente?' · '+r.patente:''));text('runningInfo',r.punto_carguio+(r.punto_carguio==='OTROS'?' · '+r.punto_carguio_otro:'')+' · '+dec(r.litros_cargados,0)+' L · '+dec(r.supresor_kg||0,1)+' kg supresor');
@@ -500,6 +651,7 @@
     text('accuracyValue',estado.accuracy===null?'—':dec(estado.accuracy,1)+' m');text('lastReadingValue',estado.gpsTime?zoneHour(new Date(estado.gpsTime)):'—');
     text('pointCountValue',String(c.puntos.length));text('rejectedValue',String(estado.discarded));$('cancelEmptyButton').hidden=c.puntos.length>0;
     if(estado.gpsTime&&!estado.gpsError&&(estado.watchId!==null||c.modo==='DEMO'))text('gpsStatus',estado.currentSpeed<2?'GPS · detenido':'GPS · seguimiento activo');
+    renderEntregas();
   }
 
   function calcularMinutosRiego(c,finISO){
@@ -527,10 +679,10 @@
     }catch(e){console.warn('Leaflet no disponible:',e);estado.map=null;$('mapFallback').hidden=false;drawFallback();}
   }
   function updateMapBase(){if(!estado.map||!window.L)return;
-    if(navigator.onLine&&!estado.osmTiles){estado.osmTiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{minZoom:2,maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> colaboradores'}).addTo(estado.map);}
+    if(navigator.onLine&&!estado.osmTiles){estado.osmTiles=L.tileLayer(SAT_MAP.url,{minZoom:2,maxNativeZoom:SAT_MAP.maxNativeZoom,maxZoom:20,attribution:SAT_MAP.attribution,crossOrigin:false}).addTo(estado.map);}
     if(!navigator.onLine&&estado.osmTiles){estado.map.removeLayer(estado.osmTiles);estado.osmTiles=null;}
     const count=estado.circuito?estado.circuito.puntos.length:0;
-    text('mapRibbon',navigator.onLine?'Mapa base OSM · GPS '+count+' puntos':'Sin internet · trazado GPS local '+count+' puntos');
+    text('mapRibbon',navigator.onLine?'Satélite Sentinel-2 2016 (referencial) · GPS '+count+' puntos':'Sin conexión · trazado GPS local '+count+' puntos');
   }
   function drawFallback(){const svg=$('routeSvg');svg.replaceChildren();const c=estado.circuito,p=c?c.puntos:[];const ns='http://www.w3.org/2000/svg';
     const elem=(tag,attrs)=>{const el=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,String(v));svg.appendChild(el);return el;};
@@ -562,18 +714,18 @@
     const result=JSON.parse(JSON.stringify(c));const now=new Date();result.resumen.fin_iso=now.toISOString();
     // En demo se ajusta fin si la simulación terminó antes de la última fecha artificial.
     if(Date.parse(result.resumen.fin_iso)<Date.parse(result.puntos.at(-1).fecha_iso))result.resumen.fin_iso=result.puntos.at(-1).fecha_iso;
-    result.resumen.puntos_esperados=result.puntos.length;result.resumen.eventos_riego=result.eventos_riego||[];result.resumen.tiempo_regando_min=round(calcularMinutosRiego(result,result.resumen.fin_iso),2);result.resumen.distancia_regando_km=round(distanciaRegando(result),3);result.estado_local='PENDIENTE_SYNC';result.ultima_actualizacion_iso=now.toISOString();
+    result.resumen.puntos_esperados=result.puntos.length;result.resumen.eventos_riego=result.eventos_riego||[];result.resumen.entregas_agua=result.entregas_agua||[];result.resumen.tiempo_regando_min=round(calcularMinutosRiego(result,result.resumen.fin_iso),2);result.resumen.distancia_regando_km=round(distanciaRegando(result),3);result.estado_local='PENDIENTE_SYNC';result.ultima_actualizacion_iso=now.toISOString();
     const pending=readStore(STORAGE.pending,[]);if(!Array.isArray(pending)){warn('La lista de circuitos locales está dañada. No se finalizó para evitar pérdida de datos.');return;}
     if(!pending.some(x=>x.resumen&&x.resumen.circuito_id===result.resumen.circuito_id))pending.push(result);
     if(!writeStore(STORAGE.pending,pending)){toast('No se pudo guardar el cierre. El circuito sigue abierto.');return;}
     stopSensors();estado.circuito=null;try{localStorage.removeItem(STORAGE.active);}catch(_){/* Ya está registrado en pendientes. */}
-    text('finalDistance',dec(result.totalMetros/1000,2)+' km');text('finalPoints',String(result.puntos.length));text('finalMaxSpeed',dec(result.velocidad_max_kmh,0)+' km/h');text('finalExcess',String(result.muestras_exceso));text('finalRiegoTiempo',formatDuration(calcularMinutosRiego(result,result.resumen.fin_iso)*60000));text('finalId',result.resumen.circuito_id);
+    text('finalDistance',dec(result.totalMetros/1000,2)+' km');text('finalPoints',String(result.puntos.length));text('finalMaxSpeed',dec(result.velocidad_max_kmh,0)+' km/h');text('finalExcess',String(result.muestras_exceso));text('finalRiegoTiempo',formatDuration(calcularMinutosRiego(result,result.resumen.fin_iso)*60000));text('finalId',result.resumen.circuito_id);text('finalPiscinas',dec(sumaEntregas(result,'PISCINA'),0)+' L');text('finalPerforadoras',dec(sumaEntregas(result,'PERFORADORA'),0)+' L');
     show('completedScreen');updatePending();toast('Cierre local guardado; se verificará al sincronizar.');setTimeout(iniciarSyncAutomatica,1200);
   }
   function cancelEmptyCircuit(){const c=estado.circuito;if(!c||c.puntos.length>0)return;if(!confirm('¿Cancelar esta apertura sin puntos GPS? No se guardará como circuito terminado.'))return;stopSensors();try{localStorage.removeItem(STORAGE.active);}catch(_){warn('No fue posible eliminar la apertura del almacenamiento local.');return;}resetForNew();toast('Apertura cancelada sin puntos GPS.');}
   function resetForNew(){estado.circuito=null;estado.gpsTime=null;estado.accuracy=null;estado.currentSpeed=0;estado.excess=false;estado.segments=[];estado.follow=true;estado.discarded=0;estado.saveTime=0;estado.demoUsed=false;$('demoTools').hidden=true;
-    $('startForm').reset();aguaManualAntesFlujo='';$('supresorCantidadBox').hidden=true;$('otroCarguioBox').hidden=true;$('flujometroCampos').hidden=true;$('litros').readOnly=false;$('litrosEtiqueta').textContent='Agua cargada · ingreso manual *';$('modoAguaNota').textContent='Sin flujómetro: ingresa manualmente los litros cargados en el campo superior.';show('setupScreen');clearWarning();updatePending();}
-  function recoverCircuit(){const active=readStore(STORAGE.active,null);if(!validCircuit(active))return;estado.circuito=active;if(!Array.isArray(active.eventos_riego))active.eventos_riego=[];if(typeof active.regando!=='boolean')active.regando=false;estado.discarded=Number(active.descartadas)||0;estado.gpsTime=active.puntos.length?Date.parse(active.puntos.at(-1).fecha_iso):null;estado.accuracy=active.puntos.length?active.puntos.at(-1).precision_m:null;estado.currentSpeed=0;estado.excess=false;
+    $('startForm').reset();text('icvAsociado','—');aguaManualAntesFlujo='';$('supresorCantidadBox').hidden=true;$('otroCarguioBox').hidden=true;$('flujometroCampos').hidden=true;$('litros').readOnly=false;$('litrosEtiqueta').textContent='Agua cargada · ingreso manual *';$('modoAguaNota').textContent='Sin flujómetro: ingresa manualmente los litros cargados en el campo superior.';show('setupScreen');clearWarning();updatePending();}
+  function recoverCircuit(){const active=readStore(STORAGE.active,null);if(!validCircuit(active))return;estado.circuito=active;if(!Array.isArray(active.entregas_agua))active.entregas_agua=Array.isArray(active.resumen.entregas_agua)?active.resumen.entregas_agua:[];active.resumen.entregas_agua=active.entregas_agua;if(!Array.isArray(active.eventos_riego))active.eventos_riego=[];if(typeof active.regando!=='boolean')active.regando=false;estado.discarded=Number(active.descartadas)||0;estado.gpsTime=active.puntos.length?Date.parse(active.puntos.at(-1).fecha_iso):null;estado.accuracy=active.puntos.length?active.puntos.at(-1).precision_m:null;estado.currentSpeed=0;estado.excess=false;
     show('runningScreen');$('resumeNotice').hidden=false;$('demoTools').hidden=active.modo!=='DEMO'||active.puntos.length>0;$('demoRibbon').hidden=active.modo!=='DEMO';text('gpsStatus','GPS pendiente de reanudación');text('savedValue','Recuperado del dispositivo');render();toast('Se recuperó un circuito anterior. Presiona Reanudar GPS.');
   }
   function demoPoints(){const c=estado.circuito;if(!c||c.modo!=='DEMO'||estado.demoUsed)return;estado.demoUsed=true;
@@ -592,7 +744,15 @@
   function init(){estado.storageOK=hasStorage();if(!estado.storageOK){warn('Este navegador no admite guardado local. Desactiva modo privado o habilita almacenamiento antes de operar.');$('startBtn').disabled=true;}
     if(!window.isSecureContext&&!demoQuery){warn('Abre la aplicación desde HTTPS para habilitar GPS. Un archivo abierto directamente no es una forma fiable de operación.');}
     if(demoQuery)$('demoRibbon').hidden=false;
+    $('equipo').addEventListener('change',()=>{const opt=$('equipo').selectedOptions[0];text('icvAsociado',opt&&opt.dataset.icv?opt.dataset.icv:'—');});
     $('riegoToggle').addEventListener('click',alternarRiego);
+    $('btnCargarPiscina').addEventListener('click',()=>abrirEntrega('PISCINA'));
+    $('btnCargarPerforadora').addEventListener('click',()=>abrirEntrega('PERFORADORA'));
+    $('formEntrega').addEventListener('submit',registrarEntrega);
+    $('cancelarEntrega').addEventListener('click',cerrarEntrega);
+    $('deshacerEntrega').addEventListener('click',anularUltimaEntrega);
+    $('entregaOverlay').addEventListener('click',ev=>{if(ev.target===$('entregaOverlay'))cerrarEntrega();});
+    document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&!$('entregaOverlay').hidden)cerrarEntrega();});
     document.querySelectorAll('input[name="puntoCarguio"]').forEach(x=>x.addEventListener('change',()=>{$('otroCarguioBox').hidden=document.querySelector('input[name="puntoCarguio"]:checked').value!=='OTROS';}));
     $('supresorCheck').addEventListener('change',()=>{$('supresorCantidadBox').hidden=!$('supresorCheck').checked;});
     $('flujometroCheck').addEventListener('change',()=>{if($('flujometroCheck').checked)aguaManualAntesFlujo=$('litros').value;refrescarFlujometro();});
@@ -857,8 +1017,8 @@
         m.invalidateSize();
         for(const layer of nube.historyLayers)m.removeLayer(layer);
         nube.historyLayers=[];
-        if(!nube.historyTiles){nube.historyTiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          {maxZoom:19,attribution:'&copy; OpenStreetMap colaboradores'}).addTo(m);}
+        if(!nube.historyTiles){nube.historyTiles=L.tileLayer(SAT_MAP.url,
+          {minZoom:2,maxNativeZoom:SAT_MAP.maxNativeZoom,maxZoom:20,attribution:SAT_MAP.attribution}).addTo(m);}
         // Agrupa tramos consecutivos del mismo color para evitar miles de capas.
         let currentColor=null, coords=[];
         const flush=()=>{if(coords.length>1)nube.historyLayers.push(L.polyline(coords,{color:currentColor,weight:5,opacity:.9}).addTo(m));};
@@ -929,14 +1089,23 @@
     if(!list.length){toast('No hay circuitos cerrados para exportar.');return;}
     const fields=['circuito_id','fecha_operacion','equipo','patente','operador','turno','litros_cargados',
       'limite_velocidad_kmh','inicio_iso','fin_iso','distancia_km','velocidad_max_kmh',
-      'muestras_exceso','litros_por_km','puntos_esperados','flujometro_aplica','flujometro_id','flujometro_lectura_inicio','flujometro_lectura_termino','flujometro_unidad','flujometro_volumen_l','estado_local','sincronizado_en_iso'];
+      'muestras_exceso','litros_por_km','puntos_esperados','flujometro_aplica','flujometro_id','flujometro_lectura_inicio','flujometro_lectura_termino','flujometro_unidad','flujometro_volumen_l','entregas_piscinas_l','entregas_perforadoras_l','numero_entregas','estado_local','sincronizado_en_iso'];
     const rows=list.map(c=>{const r=c.resumen,km=c.totalMetros/1000;
       return [r.circuito_id,r.fecha_operacion,r.equipo,r.patente,r.operador,r.turno,r.litros_cargados,
         r.limite_velocidad_kmh,r.inicio_iso,r.fin_iso,round(km,3),c.velocidad_max_kmh,
         c.muestras_exceso,km>0?round(r.litros_cargados/km,2):'',c.puntos.length,
-        r.flujometro_aplica===true?'SI':'NO',r.flujometro_id||'',r.flujometro_lectura_inicio??'',r.flujometro_lectura_termino??'',r.flujometro_unidad||'',r.flujometro_volumen_l||'',
+        r.flujometro_aplica===true?'SI':'NO',r.flujometro_id||'',r.flujometro_lectura_inicio??'',r.flujometro_lectura_termino??'',r.flujometro_unidad||'',r.flujometro_volumen_l||'',sumaEntregas(c,'PISCINA'),sumaEntregas(c,'PERFORADORA'),entregasCircuito(c).length,
         c.estado_local,c.sincronizado_en_iso||''];});
     descargarCsv('ICV_Resumen_Circuitos.csv',fields,rows);
+  }
+  function csvEntregasLocal() {
+    const list=circuitosLocales();
+    const fields=['circuito_id','fecha_operacion','equipo','operador','tipo','identificador','litros_entregados','fecha_hora','latitud','longitud','precision_m'];
+    const rows=list.flatMap(c=>(c.entregas_agua||c.resumen.entregas_agua||[]).map(e=>[
+      c.resumen.circuito_id,c.resumen.fecha_operacion,c.resumen.equipo,c.resumen.operador,e.tipo,e.identificador,e.litros,e.fecha_iso,e.lat??'',e.lon??'',e.precision_m??''
+    ]));
+    if(!rows.length){toast('No hay entregas registradas en circuitos cerrados.');return;}
+    descargarCsv('ICV_Entregas_Piscinas_Perforadoras.csv',fields,rows);
   }
   function guardarRespaldoJSON() {
     const data={exportado_en:new Date().toISOString(),version:3,circuitos:circuitosLocales(),activo:readStore(STORAGE.active,null)};
@@ -954,6 +1123,7 @@
     campo('historyFilter').addEventListener('change',actualizarHistorial);
     campo('historySearch').addEventListener('input',actualizarHistorial);
     campo('csvSummaryButton').addEventListener('click',csvResumen);
+    campo('csvEntregasButton').addEventListener('click',csvEntregasLocal);
     campo('jsonBackupButton').addEventListener('click',guardarRespaldoJSON);
     campo('csvDetailButton').addEventListener('click',()=>{
       const c=circuitosLocales().find(x=>x.resumen.circuito_id===nube.historialSeleccionado);
@@ -976,7 +1146,7 @@
 
   init();
   // Hook deliberadamente solo lectura para pruebas automatizadas; no altera telemetría.
-  window.ICV_RIEGO_DIAG=Object.freeze({version:'0.7.0',getState:()=>({activo:!!estado.circuito,puntos:estado.circuito?estado.circuito.puntos.length:0,regando:estado.circuito?estado.circuito.regando:false,tiempo_regando_min:estado.circuito?calcularMinutosRiego(estado.circuito):0,distancia_regando_km:estado.circuito?distanciaRegando(estado.circuito):0,distancia_m:estado.circuito?round(estado.circuito.totalMetros,2):0,descartadas:estado.discarded,estado_local:estado.circuito?estado.circuito.estado_local:'SIN_CIRCUITO',demo:demoQuery})});
+  window.ICV_RIEGO_DIAG=Object.freeze({version:'0.8.1',getState:()=>({activo:!!estado.circuito,puntos:estado.circuito?estado.circuito.puntos.length:0,regando:estado.circuito?estado.circuito.regando:false,tiempo_regando_min:estado.circuito?calcularMinutosRiego(estado.circuito):0,distancia_regando_km:estado.circuito?distanciaRegando(estado.circuito):0,distancia_m:estado.circuito?round(estado.circuito.totalMetros,2):0,descartadas:estado.discarded,estado_local:estado.circuito?estado.circuito.estado_local:'SIN_CIRCUITO',demo:demoQuery})});
 })();
 </script>
 <script>

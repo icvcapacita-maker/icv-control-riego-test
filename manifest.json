@@ -1,7 +1,7 @@
 {
   "name": "ICV · Control de Riego y Telemetría GPS",
   "short_name": "ICV Riego GPS",
-  "description": "Registro GPS y riego en tablet, supervisión con PIN y receptor configurado automáticamente.",
+  "description": "Registro GPS de regadío, aljibes seleccionables CA-08 a CA-12, cartografía satelital 2016 y entregas a piscinas/perforadoras.",
   "id": "./index.html",
   "start_url": "./index.html",
   "scope": "./",
